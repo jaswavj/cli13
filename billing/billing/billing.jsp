@@ -100,6 +100,7 @@
                                         </select>
                                         <input type="hidden" id="productUnitId" value="">
                                         <input type="hidden" id="productUnitName" value="">
+                                        <input type="hidden" id="productConvertionUnit" value="">
                                     </div>
                                     <div class="col-2 input-outline"><input type="number" id="productQty"
                                             class="form-control" placeholder="" value="1" min="1"><label id="qtyLabel"> Qty </label>

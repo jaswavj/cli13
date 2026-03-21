@@ -45,7 +45,7 @@ public Vector getProductUsingCode(String code, int priceCategory) throws Excepti
 								+"	            WHEN b.`disc_type` = 2 THEN (b.`mrp` * b.`discount`) / 100 "
 								+"	            ELSE 0 "
 								+"	        END, 2 "
-								+"	    ) AS discount_amount,b.id,a.unit_id,IFNULL(u.name,'') AS unit_name, IFNULL(b.commission,0) AS commission "
+								+"	    ) AS discount_amount,b.id,a.unit_id,IFNULL(u.name,'') AS unit_name, IFNULL(b.commission,0) AS commission, IFNULL(u.convertion_unit,'') AS convertion_unit "
 								+"	FROM `prod_product` a "
 								+"	JOIN `prod_batch` b ON b.`product_id` = a.`id` "
 								+"	LEFT JOIN `prod_units` u ON u.id = a.unit_id "
@@ -63,6 +63,7 @@ public Vector getProductUsingCode(String code, int priceCategory) throws Excepti
 			vec.addElement(rs.getString(6)); // unit_id
 			vec.addElement(rs.getString(7)); // unit_name
 			vec.addElement(rs.getString(8)); // commission
+			vec.addElement(rs.getString(9)); // convertion_unit
 
 			rs.close();
 			}
@@ -112,7 +113,7 @@ public Vector getProductUsingName(String productName, int priceCategory) throws 
 								+"	            WHEN b.`disc_type` = 2 THEN (b.`mrp` * b.`discount`) / 100 "
 								+"	            ELSE 0 "
 								+"	        END, 2 "
-								+"	    ) AS discount_amount,b.id,a.unit_id,IFNULL(u.name,'') AS unit_name, IFNULL(b.commission,0) AS commission "
+								+"	    ) AS discount_amount,b.id,a.unit_id,IFNULL(u.name,'') AS unit_name, IFNULL(b.commission,0) AS commission, IFNULL(u.convertion_unit,'') AS convertion_unit "
 								+"	FROM `prod_product` a "
 								+"	JOIN `prod_batch` b ON b.`product_id` = a.`id` "
 								+"	LEFT JOIN `prod_units` u ON u.id = a.unit_id "
@@ -130,6 +131,7 @@ public Vector getProductUsingName(String productName, int priceCategory) throws 
 			vec.addElement(rs.getString(6)); // unit_id
 			vec.addElement(rs.getString(7)); // unit_name
 			vec.addElement(rs.getString(8)); // commission
+			vec.addElement(rs.getString(9)); // convertion_unit
 
 			rs.close();
 			}
@@ -842,7 +844,7 @@ public Vector getStockAdj(String from, String to, int productId) throws Exceptio
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT b.name,a.`stock_in`,a.`stock_out`,a.`stock_now`,a.`notes`,")
            .append("CONCAT(DATE_FORMAT(a.date, '%d-%m-%Y'),'/',a.time) AS DATETIME,")
-           .append("c.user_name,a.stockAdjType,IFNULL(u.name,'') AS unit_name ")
+           .append("c.user_name,a.stockAdjType,IFNULL(u.name,'') AS unit_name,IFNULL(u.convertion_unit,'') AS convertion_unit ")
            .append("FROM prod_lifecycle a ")
            .append("JOIN prod_product b ON a.`product_id`=b.`id` ")
            .append("JOIN users c ON c.id=a.uid ")
@@ -875,6 +877,7 @@ public Vector getStockAdj(String from, String to, int productId) throws Exceptio
             vec1.addElement(rs.getString(7));
             vec1.addElement(rs.getString(8));
             vec1.addElement(rs.getString(9)); // unit_name
+            vec1.addElement(rs.getString(10)); // convertion_unit
             vec.addElement(vec1);
         }
         return vec;
@@ -980,7 +983,7 @@ public Vector getBillDetailsUsingNo(String bill) throws Exception {
     try {
         con = util.DBConnectionManager.getConnectionFromPool();
         
-        String sql = "SELECT c.`name`,b.`qty`,b.`price`,b.`disc`,b.`total`,b.gst,d.name AS category_name,c.hsn,IFNULL(u.name,'') AS unit_name FROM `prod_bill` a "
+        String sql = "SELECT c.`name`,b.`qty`,b.`price`,b.`disc`,b.`total`,b.gst,d.name AS category_name,c.hsn,IFNULL(u.name,'') AS unit_name,IFNULL(u.convertion_unit,'') AS convertion_unit FROM `prod_bill` a "
 					+"	JOIN `prod_bill_details` b ON b.`bill_id`=a.`id` "
 					+"	JOIN `prod_product` c ON c.id=b.`prod_id` "
 					+"	LEFT JOIN `prod_category` d ON d.id=c.category_id "

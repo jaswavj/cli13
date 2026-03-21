@@ -39,12 +39,16 @@ if (discParam != null && !discParam.trim().isEmpty()) {
 
 BigDecimal stock = new BigDecimal(request.getParameter("stock"));
 
-// Convert stock to base quantity when unit has conversion setup.
+// Convert stock, cost, mrp, and commission when unit has conversion setup.
 Vector selectedUnit = prod.getUnitById(unitId);
 if (selectedUnit != null && selectedUnit.size() > 3 && selectedUnit.elementAt(3) != null) {
     BigDecimal convertionCalculation = (BigDecimal) selectedUnit.elementAt(3);
     if (convertionCalculation.compareTo(BigDecimal.ZERO) > 0) {
         stock = stock.multiply(convertionCalculation);
+        BigDecimal calcBD = convertionCalculation;
+        cost = new BigDecimal(cost).divide(calcBD, 6, java.math.RoundingMode.HALF_UP).doubleValue();
+        mrp = new BigDecimal(mrp).divide(calcBD, 6, java.math.RoundingMode.HALF_UP).doubleValue();
+        commission = new BigDecimal(commission).divide(calcBD, 6, java.math.RoundingMode.HALF_UP).doubleValue();
     }
 }
 

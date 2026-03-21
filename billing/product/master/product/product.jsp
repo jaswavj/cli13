@@ -159,6 +159,7 @@ String type = request.getParameter("type"); // success / warning / danger / info
                             </div>
                             <div class="col-md-6 ">
                                 <label style="font-size: 0.85rem;">Commission (Rs)</label><input type="number" step="0.01" name="commission" id="commissionInput" class="form-control" placeholder="0.00" style="padding: 7px 10px; font-size: 0.9rem;" value="0.00">
+                                <small id="commissionConversionNote" class="text-muted d-block mt-1"></small>
                             </div>
                             <div class="col-md-6 ">
                                 <label style="font-size: 0.85rem;">Discount Type</label>
@@ -290,14 +291,17 @@ String type = request.getParameter("type"); // success / warning / danger / info
         const unitSelect = document.getElementById('unitSelect');
         const costInput = document.getElementById('costInput');
         const mrpInput = document.getElementById('mrpInput');
+        const commissionInput = document.getElementById('commissionInput');
         const costNote = document.getElementById('costConversionNote');
         const mrpNote = document.getElementById('mrpConversionNote');
-        if (!unitSelect || !costInput || !mrpInput || !costNote || !mrpNote) return;
+        const commissionNote = document.getElementById('commissionConversionNote');
+        if (!unitSelect || !costInput || !mrpInput || !commissionInput || !costNote || !mrpNote || !commissionNote) return;
 
         const selectedOption = unitSelect.options[unitSelect.selectedIndex];
         if (!selectedOption || unitSelect.value === '') {
             costNote.textContent = '';
             mrpNote.textContent = '';
+            commissionNote.textContent = '';
             return;
         }
 
@@ -305,10 +309,12 @@ String type = request.getParameter("type"); // success / warning / danger / info
         const convertionCalculation = parseFloat(selectedOption.getAttribute('data-convertion-calculation') || '0');
         const costValue = parseFloat(costInput.value || '0');
         const mrpValue = parseFloat(mrpInput.value || '0');
+        const commissionValue = parseFloat(commissionInput.value || '0');
 
         if (convertionUnit.trim() === '' || isNaN(convertionCalculation) || convertionCalculation <= 0) {
             costNote.textContent = '';
             mrpNote.textContent = '';
+            commissionNote.textContent = '';
             return;
         }
 
@@ -324,6 +330,13 @@ String type = request.getParameter("type"); // success / warning / danger / info
             mrpNote.textContent = 'Converted MRP per ' + convertionUnit + ': ' + convertedMrp.toFixed(3);
         } else {
             mrpNote.textContent = '';
+        }
+
+        if (!isNaN(commissionValue) && commissionValue > 0) {
+            const convertedCommission = commissionValue / convertionCalculation;
+            commissionNote.textContent = 'Converted Commission per ' + convertionUnit + ': ' + convertedCommission.toFixed(3);
+        } else {
+            commissionNote.textContent = '';
         }
     }
 
@@ -438,7 +451,7 @@ String type = request.getParameter("type"); // success / warning / danger / info
                     <td style="padding: 0.4rem; color: #718096; border: none; width: 10%;"><span class="badge bg-secondary">${product.prodCode || '-'}</span></td>
                     <td style="padding: 0.4rem; color: #718096; border: none; width: 12%;">${product.categ}</td>
                     <td style="padding: 0.4rem; color: #718096; border: none; width: 10%;">${product.mrp}</td>
-                    <td style="padding: 0.4rem; color: #718096; border: none; width: 10%;">${product.stock} ${product.unit || ''}</td>
+                    <td style="padding: 0.4rem; color: #718096; border: none; width: 10%;">${product.stock}${product.convertionUnit ? ' <small class="text-muted">' + product.convertionUnit + '</small>' : ' ' + (product.unit || '')}</td>
                 </tr>
             `;
         });
@@ -548,6 +561,7 @@ String type = request.getParameter("type"); // success / warning / danger / info
     document.getElementById('stockInput').addEventListener('input', updateStockConversionNote);
     document.getElementById('costInput').addEventListener('input', updateConvertedPriceNotes);
     document.getElementById('mrpInput').addEventListener('input', updateConvertedPriceNotes);
+    document.getElementById('commissionInput').addEventListener('input', updateConvertedPriceNotes);
 
     document.getElementById('productSearch').addEventListener('input', function() {
         const searchTerm = this.value.trim();

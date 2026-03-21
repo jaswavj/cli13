@@ -182,6 +182,7 @@ function addProduct() {
     const discount = parseFloat(document.getElementById("productDiscount").value);
     const selectedUnit = document.getElementById("productUnit").value;
     const unitName = document.getElementById("productUnitName").value;
+    const convertionUnit = (document.getElementById("productConvertionUnit").value || '').trim();
 
     if (code === "" || name === "" || isNaN(qtyInput) || isNaN(price) || isNaN(discount)) {
         alert("Please enter valid product details!");
@@ -214,7 +215,7 @@ function addProduct() {
         // For other units or when unit dropdown is disabled
         actualQty = qtyInput;
         displayQty = qtyInput;
-        displayUnit = unitName;
+        displayUnit = convertionUnit || unitName;
     }
     
     // Calculate already added quantity for this product (in actual units, e.g., KG)
@@ -335,6 +336,7 @@ function addProduct() {
     document.getElementById("productUnit").disabled = true;
     document.getElementById("productUnitId").value = "";
     document.getElementById("productUnitName").value = "";
+    document.getElementById("productConvertionUnit").value = "";
     document.getElementById("qtyLabel").textContent = " Qty ";
     $('#productName').prop('disabled', false);
     document.getElementById("productCode").focus();
@@ -781,9 +783,10 @@ function fetchProductDetails(code) {
             // Set unit information
             $('#productUnitId').val(data.unitId || '');
             $('#productUnitName').val(data.unitName || '');
+            $('#productConvertionUnit').val(data.convertionUnit || '');
             
             // Handle unit select box
-            handleUnitSelection(data.unitName || '');
+            handleUnitSelection(data.unitName || '', data.convertionUnit || '');
 
             // Fetch and store stock
             fetchProductStock(data.id);
@@ -867,9 +870,10 @@ function fetchProductDetailsByName(name) {
             // Set unit information
             $('#productUnitId').val(data.unitId || '');
             $('#productUnitName').val(data.unitName || '');
+            $('#productConvertionUnit').val(data.convertionUnit || '');
             
             // Handle unit select box
-            handleUnitSelection(data.unitName || '');
+            handleUnitSelection(data.unitName || '', data.convertionUnit || '');
 
             // Fetch and store stock
             fetchProductStock(data.id);
@@ -887,7 +891,7 @@ function fetchProductDetailsByName(name) {
 }
 
 // Handle unit selection and conversion
-function handleUnitSelection(unitName) {
+function handleUnitSelection(unitName, convertionUnit) {
     const unitSelect = document.getElementById('productUnit');
     const qtyLabel = document.getElementById('qtyLabel');
     
@@ -905,9 +909,12 @@ function handleUnitSelection(unitName) {
         unitSelect.innerHTML = '<option value="kg">KG</option><option value="gram">Gram</option>';
         unitSelect.value = 'kg';
     } else {
-        // For other units (NOS, Meter, Gram, etc.), keep disabled and show unit name
+        // For other units, show unit name; append conversion unit if available
+        const displayLabel = (convertionUnit && convertionUnit.trim())
+            ? unitName + ' (' + convertionUnit.trim() + ')'
+            : unitName;
         unitSelect.disabled = true;
-        unitSelect.innerHTML = '<option value="">' + unitName + '</option>';
+        unitSelect.innerHTML = '<option value="">' + displayLabel + '</option>';
     }
 }
 

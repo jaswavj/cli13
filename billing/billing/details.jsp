@@ -18,6 +18,7 @@ int batchId = Integer.parseInt(getDet.get(4).toString());
 String unitId = getDet.size() > 5 && getDet.get(5) != null ? getDet.get(5).toString() : "";
 String unitName = getDet.size() > 6 && getDet.get(6) != null ? getDet.get(6).toString() : "";
 String commission = getDet.size() > 7 && getDet.get(7) != null ? getDet.get(7).toString() : "0";
+String convertionUnit = getDet.size() > 8 && getDet.get(8) != null ? getDet.get(8).toString() : "";
 
 String json = "{\"id\":\"" + productId + "\","
              + "\"name\":\"" + name + "\","
@@ -26,6 +27,7 @@ String json = "{\"id\":\"" + productId + "\","
              + "\"batchId\":\"" + batchId + "\","
              + "\"unitId\":\"" + unitId + "\","
              + "\"unitName\":\"" + unitName + "\","
-             + "\"commission\":\"" + commission + "\"}";
+             + "\"commission\":\"" + commission + "\","
+             + "\"convertionUnit\":\"" + convertionUnit + "\"}";
 out.print(json);
 %>

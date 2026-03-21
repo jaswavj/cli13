@@ -1384,7 +1384,7 @@ public Vector getAllProductBatch(int id)throws Exception
 			pt = con.prepareStatement("SELECT b.name,b.mrp,CASE "
 								      +"  WHEN b.disc_type = 1 THEN CONCAT(CAST(discount AS UNSIGNED), ' RS') "
 								      +"  WHEN b.disc_type = 2 THEN CONCAT(CAST(discount AS UNSIGNED), ' %') "
-								      +"  ELSE 'No Discount' END AS discount_display,b.id,b.stock,added_stock,IFNULL(u.name,'') AS unit_name "
+								      +"  ELSE 'No Discount' END AS discount_display,b.id,b.stock,added_stock,IFNULL(u.name,'') AS unit_name,IFNULL(u.convertion_unit,'') AS convertion_unit,IFNULL(u.convertion_calculation,0) AS convertion_calculation "
 							+"	FROM prod_batch b "
 							+"	LEFT JOIN prod_product p ON p.id = b.product_id "
 							+"	LEFT JOIN prod_units u ON u.id = p.unit_id "
@@ -1402,6 +1402,8 @@ public Vector getAllProductBatch(int id)throws Exception
 		vec1.addElement(rs.getString(5));
 		vec1.addElement(rs.getString(6));
 		vec1.addElement(rs.getString(7)); // unit_name
+		vec1.addElement(rs.getString(8)); // convertion_unit
+		vec1.addElement(rs.getString(9)); // convertion_calculation
 		vec.addElement(vec1);
 		}
 	return vec;
@@ -2644,7 +2646,7 @@ Vector major = new Vector();
 pt = con.prepareStatement("SELECT b.`name`,b.`code`,a.stock,FORMAT(a.`cost`,2),FORMAT(a.`mrp`,2),FORMAT(CASE "
 						+"	        WHEN disc_type = 1 THEN discount  "                
 						+"	        WHEN disc_type = 2 THEN ROUND(mrp * (discount/100), 2)  "
-						+"	        ELSE 0 END,2) AS discount_in_rs,a.discount,FORMAT(a.cost*a.stock,2) AS costTotal,FORMAT(a.mrp*a.stock,2) AS mrpTotal,IFNULL(u.name,'') AS unit_name,b.category_id,IFNULL(c.name,'') AS category_name "
+						+"	        ELSE 0 END,2) AS discount_in_rs,a.discount,FORMAT(a.cost*a.stock,2) AS costTotal,FORMAT(a.mrp*a.stock,2) AS mrpTotal,IFNULL(u.name,'') AS unit_name,b.category_id,IFNULL(c.name,'') AS category_name,IFNULL(u.convertion_unit,'') AS convertion_unit "
 						+"	FROM `prod_batch` a "
 						+"	JOIN `prod_product` b ON b.id=a.`product_id` "
 						+"	LEFT JOIN `prod_units` u ON u.id=b.`unit_id` "
@@ -2668,6 +2670,7 @@ while(rs.next())
 		vec.addElement(rs.getString(10) ); // unit_name
 		vec.addElement(rs.getString(11) ); // category_id
 		vec.addElement(rs.getString(12) ); // category_name
+		vec.addElement(rs.getString(13) ); // convertion_unit
 		vec.addElement(rs.getString(8) ); // cost total
 		vec.addElement(rs.getString(9) ); // mrp total
 		vec.addElement(rs.getString(10) ); // unit_name
@@ -2752,10 +2755,11 @@ public Vector getStockAdjReport(String from, String to, int productId, int stock
 
         String sql = "SELECT psa.id, psa.product_id, p.name AS product_name, psa.batch_id, " +
                      "psa.stockType, psa.stock, psa.date, psa.time, psa.notes, " +
-                     "psa.uid, u.user_name " +
+                     "psa.uid, u.user_name, IFNULL(pu.convertion_unit,'') AS convertion_unit " +
                      "FROM prod_stock_adjustment psa " +
                      "JOIN prod_product p ON psa.product_id = p.id " +
                      "JOIN users u ON psa.uid = u.id " +
+                     "LEFT JOIN prod_units pu ON pu.id = p.unit_id " +
                      "WHERE psa.date BETWEEN ? AND ? ";
 
         if (productId > 0) {
@@ -2795,6 +2799,7 @@ public Vector getStockAdjReport(String from, String to, int productId, int stock
             vec1.addElement(rs.getString(9));  // notes
             vec1.addElement(rs.getString(10)); // uid
             vec1.addElement(rs.getString(11)); // user_name
+            vec1.addElement(rs.getString(12)); // convertion_unit
 
             vec.addElement(vec1);
         }
@@ -3235,7 +3240,7 @@ public String getProductFullDetails(String productName) throws Exception
 		String Qry				= "";
 		
 
-		pt = con.prepareStatement("SELECT a.name AS prodsName,b.name AS catName,c.name AS brandName,d.name AS batchNo,d.cost,d.mrp,a.id AS prodsId,b.id AS catId,c.id AS brandId,d.id AS batchId,COALESCE(u.name,'') AS unitName FROM prod_product a JOIN prod_category b ON a.category_id=b.id JOIN prod_brands c ON a.brand_id=c.id JOIN prod_batch d ON a.id=d.product_id LEFT JOIN prod_units u ON u.id=a.unit_id WHERE a.name=?");
+		pt = con.prepareStatement("SELECT a.name AS prodsName,b.name AS catName,c.name AS brandName,d.name AS batchNo,d.cost,d.mrp,a.id AS prodsId,b.id AS catId,c.id AS brandId,d.id AS batchId,COALESCE(u.name,'') AS unitName,COALESCE(u.convertion_unit,'') AS convertion_unit,COALESCE(u.convertion_calculation,1) AS convertion_calculation FROM prod_product a JOIN prod_category b ON a.category_id=b.id JOIN prod_brands c ON a.brand_id=c.id JOIN prod_batch d ON a.id=d.product_id LEFT JOIN prod_units u ON u.id=a.unit_id WHERE a.name=?");
 		pt.setString(1,productName);									  
 		rs = pt.executeQuery();
 		if(rs.next())
@@ -3252,7 +3257,9 @@ public String getProductFullDetails(String productName) throws Exception
 			String batchId		= rs.getString(10);
 			String unitName		= rs.getString(11);
 								
-			productDetails		= prodName+"<#>"+catName+"<#>"+brandName+"<#>"+batchNo+"<#>"+cost+"<#>"+mrp+"<#>"+prodsId+"<#>"+catId+"<#>"+brandId+"<#>"+batchId+"<#>"+unitName+"<#>";
+			String convertionUnit	= rs.getString(12);
+			String convertionCalc	= rs.getString(13);
+			productDetails		= prodName+"<#>"+catName+"<#>"+brandName+"<#>"+batchNo+"<#>"+cost+"<#>"+mrp+"<#>"+prodsId+"<#>"+catId+"<#>"+brandId+"<#>"+batchId+"<#>"+unitName+"<#>"+convertionUnit+"<#>"+convertionCalc+"<#>";
 			}
 		else
 			productDetails		= "Invalid Input";
@@ -3823,6 +3830,8 @@ public String savePurchaseBill(String invArr, String payArr, String prodArr, int
                 double mrp = Double.parseDouble(fields[6]);
                 double disc = Double.parseDouble(fields[7]);
                 double tax = Double.parseDouble(fields[8]);
+                double convertionCalc = fields.length > 10 ? Double.parseDouble(fields[10]) : 1.0;
+                if (convertionCalc <= 0) convertionCalc = 1.0;
                 int purid = 0;
                 int prodsid = 0;
                 double totalamt = totQty * cost;
@@ -3870,7 +3879,9 @@ public String savePurchaseBill(String invArr, String payArr, String prodArr, int
                 pt.setDouble(21, unitmrp);
                 bill = pt.executeUpdate();
 
-                BigDecimal stock = BigDecimal.valueOf(totQty + freeQty);
+                BigDecimal stock = BigDecimal.valueOf((totQty + freeQty) * convertionCalc);
+                double convertedCost = convertionCalc > 1 ? cost / convertionCalc : cost;
+                double convertedMrp = convertionCalc > 1 ? mrp / convertionCalc : mrp;
                 String userNotes = "While Stock Added Through Purchase Entry";
                 
                 pt = con.prepareStatement("UPDATE prod_product SET gst=? WHERE id = ?");
@@ -3878,10 +3889,12 @@ public String savePurchaseBill(String invArr, String payArr, String prodArr, int
                 pt.setInt(2, prodsid);  // Product ID
                 pt.executeUpdate();
 
-                // Update stock in ph_batch table
-                pt = con.prepareStatement("UPDATE prod_batch SET stock = stock + ? WHERE product_id = ?");
-                pt.setBigDecimal(1, stock);  // Update stock
-                pt.setInt(2, prodsid);  // Product ID
+                // Update stock, cost and mrp in prod_batch
+                pt = con.prepareStatement("UPDATE prod_batch SET stock = stock + ?, cost = ?, mrp = ? WHERE product_id = ?");
+                pt.setBigDecimal(1, stock);  // Update stock (converted units)
+                pt.setDouble(2, convertedCost);  // Update cost per base unit
+                pt.setDouble(3, convertedMrp);  // Update mrp per base unit
+                pt.setInt(4, prodsid);  // Product ID
                 pt.executeUpdate();
 
                 int prodTotId = 0;
@@ -4176,6 +4189,8 @@ public String savePurchaseBill(String invArr, String payArr, String prodArr, int
                 double disc = Double.parseDouble(fields[7]);
                 double tax = Double.parseDouble(fields[8]);
                 int poDetailId = fields.length > 9 ? Integer.parseInt(fields[9]) : 0;
+                double convertionCalc = fields.length > 10 ? Double.parseDouble(fields[10]) : 1.0;
+                if (convertionCalc <= 0) convertionCalc = 1.0;
                 
                 int purid = 0;
                 int prodsid = 0;
@@ -4271,7 +4286,9 @@ public String savePurchaseBill(String invArr, String payArr, String prodArr, int
                     pt.close();
                 }
 
-                BigDecimal stock = BigDecimal.valueOf(totQty + freeQty);
+                BigDecimal stock = BigDecimal.valueOf((totQty + freeQty) * convertionCalc);
+                double convertedCost = convertionCalc > 1 ? cost / convertionCalc : cost;
+                double convertedMrp = convertionCalc > 1 ? mrp / convertionCalc : mrp;
                 String userNotes = "While Stock Added Through Purchase Entry";
                 
                 pt = con.prepareStatement("UPDATE prod_product SET gst=? WHERE id = ?");
@@ -4280,10 +4297,12 @@ public String savePurchaseBill(String invArr, String payArr, String prodArr, int
                 pt.executeUpdate();
                 pt.close();
 
-                // Update stock in ph_batch table
-                pt = con.prepareStatement("UPDATE prod_batch SET stock = stock + ? WHERE product_id = ?");
-                pt.setBigDecimal(1, stock);  // Update stock
-                pt.setInt(2, prodsid);  // Product ID
+                // Update stock, cost and mrp in prod_batch
+                pt = con.prepareStatement("UPDATE prod_batch SET stock = stock + ?, cost = ?, mrp = ? WHERE product_id = ?");
+                pt.setBigDecimal(1, stock);  // Update stock (converted units)
+                pt.setDouble(2, convertedCost);  // Update cost per base unit
+                pt.setDouble(3, convertedMrp);  // Update mrp per base unit
+                pt.setInt(4, prodsid);  // Product ID
                 pt.executeUpdate();
                 pt.close();
 
