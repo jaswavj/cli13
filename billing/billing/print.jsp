@@ -201,6 +201,7 @@ finalPaid = totalAmount - extradisc;
             color: #000;
             font-size: 9px;
             line-height: 1.4;
+            text-align: center;
         }
         .company-name {
             font-size: 15px;
@@ -496,7 +497,7 @@ finalPaid = totalAmount - extradisc;
     <!-- Header -->
     <div class="company-header">
         <div class="logo-area">
-            <img src="logo.png" alt="Company Logo" >
+            <!--img src="logo.png" alt="Company Logo" -->
             
         </div>
         

@@ -127,24 +127,25 @@
                                     <tr style="display: table; width: 100%; table-layout: fixed;">
                                         <th style="width: 5%;">#</th>
                                         <th style="width: 10%;">Code</th>
-                                        <th style="width: 25%;">
+                                        <th style="width: 22%;">
                                             Item Name<%//=head3%>
                                         </th>
                                         <th style="width: 8%;">Qty</th>
-                                        <th style="width: 12%;">Price</th>
-                                        <th style="width: 12%;">Discount</th>
-                                        <th style="width: 13%;">Total</th>
+                                        <th style="width: 10%;">Price</th>
+                                        <th style="width: 10%;">Discount</th>
+                                        <th style="width: 10%;">Commission</th>
+                                        <th style="width: 10%;">Total</th>
                                         <th style="width: 15%;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="billBody" style="display: block; overflow-y: auto; flex-grow: 1;">
                                     <!-- Rows go here -->
                                     <!-- Empty rows to maintain minimum 5 row height -->
-                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 25%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 13%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
-                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 25%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 13%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
-                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 25%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 13%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
-                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 25%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 13%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
-                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 25%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 13%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
+                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 22%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
+                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 22%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
+                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 22%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
+                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 22%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
+                                    <tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 22%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -166,6 +167,13 @@
                                             <input type="text" class="form-control only-numbers red-text"
                                                 id="discountTotal" value="0" readonly>
                                             <label>Discount</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-4 col-lg">
+                                        <div class="input-outline">
+                                            <input type="text" class="form-control only-numbers red-text"
+                                                id="commissionTotal" value="0" readonly>
+                                            <label>Commission</label>
                                         </div>
                                     </div>
                                     <div class="col-6 col-md-4 col-lg">

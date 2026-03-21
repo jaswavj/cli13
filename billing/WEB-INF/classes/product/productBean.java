@@ -727,7 +727,7 @@ public Vector getUnits() throws Exception
 		
 	Vector units = new Vector();
 
-	pt = con.prepareStatement("SELECT name,id FROM prod_units ORDER BY name");
+    pt = con.prepareStatement("SELECT name,id,convertion_unit,convertion_calculation FROM prod_units ORDER BY name");
 	rs =pt.executeQuery();
 	while(rs.next())
 		{
@@ -736,6 +736,8 @@ public Vector getUnits() throws Exception
 
 			vec.addElement(rs.getString(1) );
 			vec.addElement(rs.getString(2) );
+            vec.addElement(rs.getString(3) );
+            vec.addElement(rs.getBigDecimal(4) );
 			
 
 		units.addElement(vec);
@@ -5413,14 +5415,25 @@ public Vector getCustomerById(int id) throws Exception {
 }
 
 // Units Management Methods
-public void addUnit(String name) throws Exception {
+public void addUnit(String name, String convertionUnit, BigDecimal convertionCalculation) throws Exception {
     Connection con = null;
     PreparedStatement pt = null;
     try {
         con = util.DBConnectionManager.getConnectionFromPool();
         con.setAutoCommit(false);
-        pt = con.prepareStatement("INSERT INTO prod_units(name, is_active) VALUES (?, 1)");
+        pt = con.prepareStatement("INSERT INTO prod_units(name, convertion_unit, convertion_calculation, is_active) VALUES (?, ?, ?, 1)");
         pt.setString(1, name);
+        if (convertionUnit != null && convertionUnit.trim().length() > 0) {
+            pt.setString(2, convertionUnit.trim());
+        } else {
+            pt.setNull(2, java.sql.Types.VARCHAR);
+        }
+
+        if (convertionCalculation != null) {
+            pt.setBigDecimal(3, convertionCalculation);
+        } else {
+            pt.setNull(3, java.sql.Types.DECIMAL);
+        }
         pt.executeUpdate();
         con.commit();
     } catch (Exception e) {
@@ -5439,12 +5452,14 @@ public Vector getUnitsList() throws Exception {
     Vector list = new Vector();
     try {
         con = util.DBConnectionManager.getConnectionFromPool();
-        pt = con.prepareStatement("SELECT id, name, is_active FROM prod_units ORDER BY name");
+        pt = con.prepareStatement("SELECT id, name, convertion_unit, convertion_calculation, is_active FROM prod_units ORDER BY name");
         rs = pt.executeQuery();
         while (rs.next()) {
             Vector row = new Vector();
             row.addElement(rs.getInt("id"));
             row.addElement(rs.getString("name"));
+            row.addElement(rs.getString("convertion_unit"));
+            row.addElement(rs.getBigDecimal("convertion_calculation"));
             row.addElement(rs.getInt("is_active"));
             list.addElement(row);
         }
@@ -5479,15 +5494,53 @@ public Vector getActiveUnitsList() throws Exception {
     }
 }
 
-public void updateUnit(int id, String name) throws Exception {
+public Vector getUnitById(int id) throws Exception {
+    Connection con = null;
+    PreparedStatement pt = null;
+    ResultSet rs = null;
+    Vector row = new Vector();
+    try {
+        con = util.DBConnectionManager.getConnectionFromPool();
+        pt = con.prepareStatement("SELECT id, name, convertion_unit, convertion_calculation, is_active FROM prod_units WHERE id = ?");
+        pt.setInt(1, id);
+        rs = pt.executeQuery();
+        if (rs.next()) {
+            row.addElement(rs.getInt("id"));
+            row.addElement(rs.getString("name"));
+            row.addElement(rs.getString("convertion_unit"));
+            row.addElement(rs.getBigDecimal("convertion_calculation"));
+            row.addElement(rs.getInt("is_active"));
+        }
+        return row;
+    } finally {
+        if (rs != null) try { rs.close(); } catch (Exception e) {}
+        if (pt != null) try { pt.close(); } catch (Exception e) {}
+        if (con != null) try { con.close(); } catch (Exception e) {}
+    }
+}
+
+public void updateUnit(int id, String name, String convertionUnit, BigDecimal convertionCalculation) throws Exception {
     Connection con = null;
     PreparedStatement pt = null;
     try {
         con = util.DBConnectionManager.getConnectionFromPool();
         con.setAutoCommit(false);
-        pt = con.prepareStatement("UPDATE prod_units SET name = ? WHERE id = ?");
+        pt = con.prepareStatement("UPDATE prod_units SET name = ?, convertion_unit = ?, convertion_calculation = ? WHERE id = ?");
         pt.setString(1, name);
-        pt.setInt(2, id);
+
+        if (convertionUnit != null && convertionUnit.trim().length() > 0) {
+            pt.setString(2, convertionUnit.trim());
+        } else {
+            pt.setNull(2, java.sql.Types.VARCHAR);
+        }
+
+        if (convertionCalculation != null) {
+            pt.setBigDecimal(3, convertionCalculation);
+        } else {
+            pt.setNull(3, java.sql.Types.DECIMAL);
+        }
+
+        pt.setInt(4, id);
         pt.executeUpdate();
         con.commit();
     } catch (Exception e) {

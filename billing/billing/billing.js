@@ -2,6 +2,7 @@ let count = 0;
 let grandTotal = 0;        // Total after discount
 let subtotal = 0;          // Total before discount
 let totalDiscount = 0;     // Total discount value
+let totalCommission = 0;   // Total commission value
 let prodTotal = 0;
 let currentProductStock = 0; // Store current product's available stock
 let productQuantitiesInBill = {}; // Track quantities already added to bill by product ID
@@ -26,6 +27,7 @@ customerNameInput.addEventListener("input", function() {
         enableSaveButton(); // Re-enable when customer is cleared
         const ct = document.getElementById('isCommission');
         if (ct) ct.checked = false;
+        refreshCommissionDisplay();
         return;
     }
     
@@ -79,6 +81,7 @@ function selectCustomer(customer) {
     document.getElementById('customerCreditLimit').value = customer.creditLimit || 0;
     const commissionToggle = document.getElementById('isCommission');
     if (commissionToggle) commissionToggle.checked = (customer.isEligibleForCommission == 1);
+    refreshCommissionDisplay();
     
     // Removed auto-selection of payment mode based on GST registration
     
@@ -266,25 +269,30 @@ function addProduct() {
     
     const productDiscount = discount * actualQty;
     const total = productSubtotal - productDiscount;
+    const commissionAmount = (document.getElementById('isCommission') && document.getElementById('isCommission').checked)
+        ? (productCommission * actualQty)
+        : 0;
 
     prodTotal+=productSubtotal;
     
     subtotal += productSubtotal;
     totalDiscount += productDiscount;
+    totalCommission += commissionAmount;
     grandTotal += total;
 
     const row = `
         <tr id="row${count}" data-batch-id="${productBatch}" data-commission="${productCommission}" class="bill-item-row" style="display: table; width: 100%; table-layout: fixed; cursor: pointer;">
             <td style="width: 5%;">${count}</td>
             <td style="width: 10%;" data-id="${productId}">${code}</td>
-            <td style="width: 25%;" data-name="${name}">${name}</td>
+            <td style="width: 22%;" data-name="${name}">${name}</td>
             <td style="width: 8%;">${displayQty} ${displayUnit}</td>
-            <td style="width: 12%;">₹${price.toFixed(3)}</td>
-            <td style="width: 12%;">₹${productDiscount.toFixed(3)}</td>
-            <td style="width: 13%;">₹${total.toFixed(3)}</td>
+            <td style="width: 10%;">₹${price.toFixed(3)}</td>
+            <td style="width: 10%;">₹${productDiscount.toFixed(3)}</td>
+            <td style="width: 10%;">₹${commissionAmount.toFixed(3)}</td>
+            <td style="width: 10%;">₹${total.toFixed(3)}</td>
             <td style="width: 15%;">
                 <button class="btn btn-danger btn-sm" 
-                    onclick="event.stopPropagation(); removeProduct(${count}, ${productSubtotal}, ${productDiscount}, ${total})">
+                    onclick="event.stopPropagation(); removeProduct(${count}, ${productSubtotal}, ${productDiscount}, ${commissionAmount}, ${total})">
                     Delete
                 </button>
             </td>
@@ -302,6 +310,7 @@ function addProduct() {
     const addedRow = document.getElementById(`row${count}`);
     addedRow.dataset.productId = productId;
     addedRow.dataset.quantity = actualQty;
+    addedRow.dataset.commissionAmount = commissionAmount;
 
     // Add click event to the newly added row
     addedRow.addEventListener('click', function(e) {
@@ -387,8 +396,34 @@ document.getElementById("productQty").addEventListener("input", function() {
 
 
 
-       function removeProduct(rowId, rowSubtotal, rowDiscount, rowTotal) {
+function getCommissionAmountForRow(row) {
+    const qty = parseFloat(row.dataset.quantity) || parseFloat(row.querySelector('td:nth-child(4)').textContent) || 0;
+    const perUnitCommission = parseFloat(row.dataset.commission || 0);
+    const isEligibleForCommission = document.getElementById('isCommission') ? document.getElementById('isCommission').checked : false;
+    return isEligibleForCommission ? (qty * perUnitCommission) : 0;
+}
+
+function refreshCommissionDisplay() {
+    totalCommission = 0;
+    const rows = document.querySelectorAll('#billBody .bill-item-row, #billBody .item-row');
+    rows.forEach(row => {
+        const commissionAmount = getCommissionAmountForRow(row);
+        row.dataset.commissionAmount = commissionAmount;
+        const commissionCell = row.querySelector('td:nth-child(7)');
+        if (commissionCell) {
+            commissionCell.textContent = '₹' + commissionAmount.toFixed(3);
+        }
+        totalCommission += commissionAmount;
+    });
+
+    updateTotals();
+    updatePayableAmount();
+}
+
+function removeProduct(rowId, rowSubtotal, rowDiscount, rowCommission, rowTotal) {
     const row = document.getElementById(`row${rowId}`);
+     if (!row) return;
+     const currentRowCommission = parseFloat(row.dataset.commissionAmount || rowCommission || 0);
     
     // Update product quantities tracker
     const productId = parseInt(row.dataset.productId);
@@ -403,6 +438,7 @@ document.getElementById("productQty").addEventListener("input", function() {
     row.remove();
     subtotal -= rowSubtotal;
     totalDiscount -= rowDiscount;
+    totalCommission -= currentRowCommission;
     grandTotal -= rowTotal;
 
     updateTotals();
@@ -411,6 +447,7 @@ document.getElementById("productQty").addEventListener("input", function() {
 function updateTotals() {
     document.getElementById("priceTotal").value = subtotal.toFixed(3);
     document.getElementById("discountTotal").value = totalDiscount.toFixed(3);
+    document.getElementById("commissionTotal").value = totalCommission.toFixed(3);
     document.getElementById("grandTotal").value = grandTotal.toFixed(3);
 }
 
@@ -505,6 +542,11 @@ document.getElementById("mode").addEventListener("change", function () {
     updatePaymentFields(payable);
 });
 
+const commissionCheckbox = document.getElementById('isCommission');
+if (commissionCheckbox) {
+    commissionCheckbox.addEventListener('change', refreshCommissionDisplay);
+}
+
 function saveBill() {
     
 
@@ -578,7 +620,7 @@ function saveBill() {
         const qty = parseFloat(cols[3].innerText) || 0;
         const price = parseFloat(cols[4].innerText.replace("₹","")) || 0;
         const discount = parseFloat(cols[5].innerText.replace("₹","")) || 0;
-        const total = parseFloat(cols[6].innerText.replace("₹","")) || 0;
+        const total = parseFloat(cols[7].innerText.replace("₹","")) || 0;
         const batchId = parseInt(row.dataset.batchId || 0);
         const commission = isEligibleForCommission ? parseFloat(row.dataset.commission || 0) : 0;
 
@@ -757,31 +799,47 @@ function fetchProductDetails(code) {
         }
     });
 }
+let productNameSuggestions = [];
+
+function getProductSuggestionName(item) {
+        if (typeof item === 'string') return item;
+        return item && (item.label || item.value || item.name || '');
+}
+
 $(function () {
-    $("#productName").autocomplete({
-      source: function (request, response) {
-        $.ajax({
-          url: contextPath + "/billing/getProducts.jsp", // backend file returning product list
-          data: { term: request.term },
-          dataType: "json",
-          success: function (data) {
-            response(data); // expects an array like ["Pen","Pencil","Notebook"]
-          }
+        $("#productName").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: contextPath + "/billing/getProducts.jsp", // backend file returning product list
+                    data: { term: request.term },
+                    dataType: "json",
+                    success: function (data) {
+                        productNameSuggestions = Array.isArray(data) ? data : [];
+                        response(data); // expects an array like ["Pen","Pencil","Notebook"]
+                    }
+                });
+            },
+            minLength: 1,   // start after 1 char
+            select: function (event, ui) {
+                const selectedName = getProductSuggestionName(ui.item);
+                $("#productName").val(selectedName);
+                fetchProductDetailsByName(selectedName);
+                return false;
+            }
         });
-      },
-      minLength: 1,   // start after 1 char
-      select: function (event, ui) {
-        $("#productName").val(ui.item.label);
-        return false;
-      }
     });
-  });
 document.getElementById("productName").addEventListener("keydown", function (e) {
     if (e.key === "Tab" || e.key === "Enter") {   // when user presses Tab or Enter
         e.preventDefault();
 
-        const name = this.value.trim();
+                const firstSuggestionName = productNameSuggestions.length > 0
+                        ? getProductSuggestionName(productNameSuggestions[0]).trim()
+                        : "";
+
+                const name = firstSuggestionName || this.value.trim();
         if (name === "") return;
+
+                this.value = name;
 
         fetchProductDetailsByName(name);
     }
@@ -1156,7 +1214,7 @@ function printQuotation() {
     const items = [];
     rows.forEach((row, index) => {
         const cells = row.querySelectorAll("td");
-        if (cells.length >= 7) {
+        if (cells.length >= 8) {
             // Extract data from table cells
             const code = cells[1].textContent.trim();
             const productId = cells[1].getAttribute('data-id') || '0';
@@ -1166,7 +1224,7 @@ function printQuotation() {
             const price = parseFloat(priceText) || 0;
             const discountText = cells[5].textContent.replace('₹', '').trim();
             const discount = parseFloat(discountText) || 0;
-            const totalText = cells[6].textContent.replace('₹', '').trim();
+            const totalText = cells[7].textContent.replace('₹', '').trim();
             const total = parseFloat(totalText) || 0;
             
             items.push({
@@ -1518,16 +1576,17 @@ function addOrderItemToBill(item) {
     const batchId = item.batchId || 0;
     
     const row = `
-        <tr class="item-row" style="display: table; width: 100%; table-layout: fixed;" data-batch-id="${batchId}">
+        <tr id="row${count}" class="item-row" style="display: table; width: 100%; table-layout: fixed;" data-batch-id="${batchId}" data-commission="0">
             <td style="width: 5%;">${count}</td>
             <td style="width: 10%;" data-id="${item.prodId}">${item.code || ''}</td>
-            <td style="width: 25%;">${item.prodName}</td>
+            <td style="width: 22%;">${item.prodName}</td>
             <td style="width: 8%;">${item.qty}</td>
-            <td style="width: 12%;">${item.price.toFixed(2)}</td>
-            <td style="width: 12%;">0.00</td>
-            <td style="width: 13%;">${item.total.toFixed(2)}</td>
+            <td style="width: 10%;">₹${item.price.toFixed(3)}</td>
+            <td style="width: 10%;">₹0.000</td>
+            <td style="width: 10%;">₹0.000</td>
+            <td style="width: 10%;">₹${item.total.toFixed(3)}</td>
             <td style="width: 15%;">
-                <button class="btn btn-danger btn-sm" onclick="removeProduct(this, ${item.prodId}, ${item.qty})">
+                <button class="btn btn-danger btn-sm" onclick="removeProduct(${count}, ${item.total}, 0, 0, ${item.total})">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -1537,6 +1596,10 @@ function addOrderItemToBill(item) {
     // Add new item
     const billBody = document.getElementById("billBody");
     billBody.insertAdjacentHTML('beforeend', row);
+
+    const addedRow = document.getElementById(`row${count}`);
+    addedRow.dataset.productId = item.prodId;
+    addedRow.dataset.quantity = item.qty;
     
     // Track product quantity
     if (!productQuantitiesInBill[item.prodId]) {
@@ -1558,6 +1621,7 @@ function clearBill() {
     grandTotal = 0;
     subtotal = 0;
     totalDiscount = 0;
+    totalCommission = 0;
     prodTotal = 0;
     productQuantitiesInBill = {};
     currentQuotationId = null;
@@ -1609,6 +1673,7 @@ function newBill() {
     // Reset payment fields
     document.getElementById('priceTotal').value = '0';
     document.getElementById('discountTotal').value = '0';
+    document.getElementById('commissionTotal').value = '0';
     document.getElementById('grandTotal').value = '0';
     document.getElementById('finalDiscount').value = '0';
     document.getElementById('payableAmount').value = '0';
@@ -1644,7 +1709,7 @@ function newBill() {
     
     // Add empty rows back to table
     const billBody = document.getElementById('billBody');
-    const emptyRowHTML = '<tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 25%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 12%;">&nbsp;</td><td style="width: 13%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>';
+    const emptyRowHTML = '<tr class="empty-row" style="display: table; width: 100%; table-layout: fixed;"><td style="width: 5%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 22%;">&nbsp;</td><td style="width: 8%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 10%;">&nbsp;</td><td style="width: 15%;">&nbsp;</td></tr>';
     billBody.innerHTML = emptyRowHTML.repeat(5);
     
     // Reset stock tracking
@@ -1687,7 +1752,7 @@ function saveQuotation() {
         const price = parseFloat(priceText);
         const discountText = row.querySelector('td:nth-child(6)').textContent.replace('₹', '').trim();
         const discount = parseFloat(discountText);
-        const totalText = row.querySelector('td:nth-child(7)').textContent.replace('₹', '').trim();
+        const totalText = row.querySelector('td:nth-child(8)').textContent.replace('₹', '').trim();
         const total = parseFloat(totalText);
         
         products.push({
@@ -1818,6 +1883,7 @@ function clearBillTable() {
     grandTotal = 0;
     subtotal = 0;
     totalDiscount = 0;
+    totalCommission = 0;
     prodTotal = 0;
     productQuantitiesInBill = {};
     
@@ -1840,20 +1906,25 @@ function addProductToBillTable(product) {
     const productSubtotal = parseFloat(product.price) * parseFloat(product.qty);
     const productDiscount = parseFloat(product.discount);
     const productTotal = parseFloat(product.total);
+    const productCommissionPerUnit = parseFloat(product.commission || 0);
+    const productCommissionAmount = (document.getElementById('isCommission') && document.getElementById('isCommission').checked)
+        ? (productCommissionPerUnit * parseFloat(product.qty))
+        : 0;
     
     // Create new row with proper styling and structure
     const row = `
-        <tr id="row${count}" class="bill-item-row" style="display: table; width: 100%; table-layout: fixed; cursor: pointer;">
+        <tr id="row${count}" class="bill-item-row" style="display: table; width: 100%; table-layout: fixed; cursor: pointer;" data-commission="${productCommissionPerUnit}">
             <td style="width: 5%;">${count}</td>
             <td style="width: 10%;" data-id="${product.productId}">${product.code}</td>
-            <td style="width: 25%;" data-name="${product.productName}">${product.productName}</td>
+            <td style="width: 22%;" data-name="${product.productName}">${product.productName}</td>
             <td style="width: 8%;">${product.qty}</td>
-            <td style="width: 12%;">₹${parseFloat(product.price).toFixed(3)}</td>
-            <td style="width: 12%;">₹${productDiscount.toFixed(3)}</td>
-            <td style="width: 13%;">₹${productTotal.toFixed(3)}</td>
+            <td style="width: 10%;">₹${parseFloat(product.price).toFixed(3)}</td>
+            <td style="width: 10%;">₹${productDiscount.toFixed(3)}</td>
+            <td style="width: 10%;">₹${productCommissionAmount.toFixed(3)}</td>
+            <td style="width: 10%;">₹${productTotal.toFixed(3)}</td>
             <td style="width: 15%;">
                 <button class="btn btn-danger btn-sm" 
-                    onclick="event.stopPropagation(); removeProduct(${count}, ${productSubtotal}, ${productDiscount}, ${productTotal})">
+                    onclick="event.stopPropagation(); removeProduct(${count}, ${productSubtotal}, ${productDiscount}, ${productCommissionAmount}, ${productTotal})">
                     Delete
                 </button>
             </td>
@@ -1871,6 +1942,7 @@ function addProductToBillTable(product) {
     const addedRow = document.getElementById(`row${count}`);
     addedRow.dataset.productId = product.productId;
     addedRow.dataset.quantity = product.qty;
+    addedRow.dataset.commissionAmount = productCommissionAmount;
     
     // Add click event to show product history
     addedRow.addEventListener('click', function(e) {
@@ -1884,6 +1956,7 @@ function addProductToBillTable(product) {
     // Update totals
     subtotal += productSubtotal;
     totalDiscount += productDiscount;
+    totalCommission += productCommissionAmount;
     grandTotal += productTotal;
     prodTotal += productSubtotal;
     

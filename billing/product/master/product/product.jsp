@@ -132,9 +132,11 @@ String type = request.getParameter("type"); // success / warning / danger / info
                                                 if (unit != null && unit.elementAt(0) != null && unit.elementAt(1) != null) {
                                                     String unitName = unit.elementAt(0).toString();
                                                     String unitId = unit.elementAt(1).toString();
+                                                    String convertionUnit = (unit.size() > 2 && unit.elementAt(2) != null) ? unit.elementAt(2).toString() : "";
+                                                    String convertionCalculation = (unit.size() > 3 && unit.elementAt(3) != null) ? unit.elementAt(3).toString() : "";
                                                     String selected = (unitName.equalsIgnoreCase("Nos") || unitName.equalsIgnoreCase("NOS") || unitName.equalsIgnoreCase("PCS")) ? "selected" : "";
                                     %>
-                                        <option value="<%=unitId%>" <%=selected%>><%=unitName%></option>
+                                        <option value="<%=unitId%>" data-convertion-unit="<%=convertionUnit%>" data-convertion-calculation="<%=convertionCalculation%>" <%=selected%>><%=unitName%></option>
                                     <%      }
                                             }
                                         }
@@ -143,14 +145,17 @@ String type = request.getParameter("type"); // success / warning / danger / info
                             </div>
                             
                             <div class="col-md-6 ">
-                                <label style="font-size: 0.85rem;">Stock</label><input type="number" name="stock" class="form-control" placeholder="" style="padding: 7px 10px; font-size: 0.9rem;" min="0" step="0.01" value="0" required>
+                                <label style="font-size: 0.85rem;">Stock</label><input type="number" name="stock" id="stockInput" class="form-control" placeholder="" style="padding: 7px 10px; font-size: 0.9rem;" min="0" step="0.01" value="0" required>
+                                <small id="stockConversionNote" class="text-muted d-block mt-1"></small>
                             </div>
                             
                             <div class="col-md-6 ">
-                                <label id="costPriceLabel" style="font-size: 0.85rem;">Cost Price <span style="color:red">*</span></label><input type="number" step="0.001" name="cost" class="form-control" placeholder=" " style="padding: 7px 10px; font-size: 0.9rem;" required>
+                                <label id="costPriceLabel" style="font-size: 0.85rem;">Cost Price <span style="color:red">*</span></label><input type="number" step="0.001" name="cost" id="costInput" class="form-control" placeholder=" " style="padding: 7px 10px; font-size: 0.9rem;" required>
+                                <small id="costConversionNote" class="text-muted d-block mt-1"></small>
                             </div>
                             <div class="col-md-6 ">
-                                <label id="mrpLabel" style="font-size: 0.85rem;">MRP <span style="color:red">*</span></label><input type="number" step="0.001" name="mrp" class="form-control" placeholder=" " style="padding: 7px 10px; font-size: 0.9rem;" required>
+                                <label id="mrpLabel" style="font-size: 0.85rem;">MRP <span style="color:red">*</span></label><input type="number" step="0.001" name="mrp" id="mrpInput" class="form-control" placeholder=" " style="padding: 7px 10px; font-size: 0.9rem;" required>
+                                <small id="mrpConversionNote" class="text-muted d-block mt-1"></small>
                             </div>
                             <div class="col-md-6 ">
                                 <label style="font-size: 0.85rem;">Commission (Rs)</label><input type="number" step="0.01" name="commission" id="commissionInput" class="form-control" placeholder="0.00" style="padding: 7px 10px; font-size: 0.9rem;" value="0.00">
@@ -250,6 +255,78 @@ String type = request.getParameter("type"); // success / warning / danger / info
 
     <script>
     const contextPath = '<%=contextPath%>';
+
+    function updateStockConversionNote() {
+        const unitSelect = document.getElementById('unitSelect');
+        const stockInput = document.getElementById('stockInput');
+        const note = document.getElementById('stockConversionNote');
+        if (!unitSelect || !stockInput || !note) return;
+
+        const selectedOption = unitSelect.options[unitSelect.selectedIndex];
+        if (!selectedOption || unitSelect.value === '') {
+            note.textContent = '';
+            return;
+        }
+
+        const baseUnitName = selectedOption.text || '';
+        const convertionUnit = selectedOption.getAttribute('data-convertion-unit') || '';
+        const convertionCalculation = parseFloat(selectedOption.getAttribute('data-convertion-calculation') || '0');
+        const stockValue = parseFloat(stockInput.value || '0');
+
+        if (convertionUnit.trim() === '' || isNaN(convertionCalculation) || convertionCalculation <= 0) {
+            note.textContent = '';
+            return;
+        }
+
+        if (!isNaN(stockValue) && stockValue > 0) {
+            const convertedStock = stockValue * convertionCalculation;
+            note.textContent = 'Converted: ' + convertedStock.toFixed(3) + ' ' + convertionUnit + ' (' + stockValue + ' x ' + convertionCalculation + ')';
+        } else {
+            note.textContent = 'Enter stock: how many ' + convertionUnit + ' per ' + baseUnitName + '.';
+        }
+    }
+
+    function updateConvertedPriceNotes() {
+        const unitSelect = document.getElementById('unitSelect');
+        const costInput = document.getElementById('costInput');
+        const mrpInput = document.getElementById('mrpInput');
+        const costNote = document.getElementById('costConversionNote');
+        const mrpNote = document.getElementById('mrpConversionNote');
+        if (!unitSelect || !costInput || !mrpInput || !costNote || !mrpNote) return;
+
+        const selectedOption = unitSelect.options[unitSelect.selectedIndex];
+        if (!selectedOption || unitSelect.value === '') {
+            costNote.textContent = '';
+            mrpNote.textContent = '';
+            return;
+        }
+
+        const convertionUnit = selectedOption.getAttribute('data-convertion-unit') || '';
+        const convertionCalculation = parseFloat(selectedOption.getAttribute('data-convertion-calculation') || '0');
+        const costValue = parseFloat(costInput.value || '0');
+        const mrpValue = parseFloat(mrpInput.value || '0');
+
+        if (convertionUnit.trim() === '' || isNaN(convertionCalculation) || convertionCalculation <= 0) {
+            costNote.textContent = '';
+            mrpNote.textContent = '';
+            return;
+        }
+
+        if (!isNaN(costValue) && costValue > 0) {
+            const convertedCost = costValue / convertionCalculation;
+            costNote.textContent = 'Converted Cost per ' + convertionUnit + ': ' + convertedCost.toFixed(3);
+        } else {
+            costNote.textContent = '';
+        }
+
+        if (!isNaN(mrpValue) && mrpValue > 0) {
+            const convertedMrp = mrpValue / convertionCalculation;
+            mrpNote.textContent = 'Converted MRP per ' + convertionUnit + ': ' + convertedMrp.toFixed(3);
+        } else {
+            mrpNote.textContent = '';
+        }
+    }
+
     function handleUnitChange(select) {
         const selectedText = select.options[select.selectedIndex].text;
         const costPriceLabel = document.getElementById('costPriceLabel');
@@ -265,6 +342,9 @@ String type = request.getParameter("type"); // success / warning / danger / info
             mrpLabel.textContent = "MRP per " + selectedText;
             discountLabel.textContent = "Discount per " + selectedText;
         }
+
+        updateStockConversionNote();
+        updateConvertedPriceNotes();
     }
     
     function handleDiscTypeChange(select) {
@@ -465,6 +545,10 @@ String type = request.getParameter("type"); // success / warning / danger / info
     }
 
     // Product search functionality with debouncing
+    document.getElementById('stockInput').addEventListener('input', updateStockConversionNote);
+    document.getElementById('costInput').addEventListener('input', updateConvertedPriceNotes);
+    document.getElementById('mrpInput').addEventListener('input', updateConvertedPriceNotes);
+
     document.getElementById('productSearch').addEventListener('input', function() {
         const searchTerm = this.value.trim();
         
@@ -554,6 +638,7 @@ String type = request.getParameter("type"); // success / warning / danger / info
         const stockInput = document.querySelector('[name="stock"]');
         stockInput.disabled = false;
         stockInput.setAttribute('required', 'required');
+        stockInput.value = '0';
 
         // Reset button
         document.getElementById('submitBtnText').textContent = 'Add';
@@ -576,6 +661,8 @@ String type = request.getParameter("type"); // success / warning / danger / info
         document.getElementById('costPriceLabel').textContent = 'Cost Price';
         document.getElementById('mrpLabel').textContent = 'MRP';
         document.getElementById('discountLabel').textContent = 'Discount';
+        document.getElementById('costConversionNote').textContent = '';
+        document.getElementById('mrpConversionNote').textContent = '';
 
         // Re-select defaults (NOS unit, Others brand, 0% GST)
         const unitSelect = document.querySelector('[name="unitId"]');
@@ -590,11 +677,18 @@ String type = request.getParameter("type"); // success / warning / danger / info
         for (let opt of gstSelect.options) {
             if (opt.value === '0') { opt.selected = true; break; }
         }
+
+        handleUnitChange(unitSelect);
+        updateStockConversionNote();
+        updateConvertedPriceNotes();
     }
 
     // Load products on page load
     document.addEventListener('DOMContentLoaded', function() {
         loadProducts(1, '');
+        handleUnitChange(document.getElementById('unitSelect'));
+        updateStockConversionNote();
+        updateConvertedPriceNotes();
     });
 </script>
 </body>

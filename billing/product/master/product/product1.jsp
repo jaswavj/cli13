@@ -39,6 +39,15 @@ if (discParam != null && !discParam.trim().isEmpty()) {
 
 BigDecimal stock = new BigDecimal(request.getParameter("stock"));
 
+// Convert stock to base quantity when unit has conversion setup.
+Vector selectedUnit = prod.getUnitById(unitId);
+if (selectedUnit != null && selectedUnit.size() > 3 && selectedUnit.elementAt(3) != null) {
+    BigDecimal convertionCalculation = (BigDecimal) selectedUnit.elementAt(3);
+    if (convertionCalculation.compareTo(BigDecimal.ZERO) > 0) {
+        stock = stock.multiply(convertionCalculation);
+    }
+}
+
 try {
     int existingProdId = prod.checkTheProductNameExist(productName);
     int existingCodeId = prod.checkTheProductCodeExist(productCode);
