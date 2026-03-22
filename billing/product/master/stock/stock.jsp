@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+﻿<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page language="java" import= "java.util.*"%>
 <%@ page errorPage="" %>
 <jsp:useBean id="prod" class="product.productBean" />
@@ -54,9 +54,9 @@ $(function () {
 
 $(document).ready(function(){
     // Click row to select product
-    window.selectProduct = function(id, name) {
-        document.getElementById('catId').value = id;
-        document.getElementById('catName').value = name;
+    window.selectProduct = function(el) {
+        document.getElementById('catId').value = el.getAttribute('data-id');
+        document.getElementById('catName').value = el.getAttribute('data-name');
         document.getElementById('stockSearchForm').submit();
     };
 
@@ -140,8 +140,9 @@ $(document).ready(function(){
                                                 String brandName = row.elementAt(2).toString();
                                                 int productId = Integer.parseInt(row.elementAt(3).toString());
                                                 String prodCode = row.elementAt(4).toString();
+                                                String safeProductName = productName.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
                                 %>
-                                <tr style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s; cursor: pointer;" onclick="selectProduct(<%=productId%>, '<%=productName.replace("'", "\\'")%>')">
+                                <tr style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s; cursor: pointer;" data-id="<%=productId%>" data-name="<%=safeProductName%>" onclick="selectProduct(this)">
                                     <td style="padding: 0.4rem; color: #718096; border: none; width: 5%;"><%=i+1%></td>
                                     <td style="padding: 0.4rem; color: #2d3748; font-weight: 500; border: none; width: 25%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%=productName%>"><%=productName%></td>
                                     <td style="padding: 0.4rem; color: #718096; border: none; width: 15%;"><%=prodCode%></td>

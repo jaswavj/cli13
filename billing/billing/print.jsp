@@ -565,14 +565,11 @@ finalPaid = totalAmount - extradisc;
         <thead>
             <tr>
                 <th style="width: 5%;">S.No</th>
-                <th style="width: 30%;">Item name</th>
+                <th style="width: 32%;">Item name</th>
                 <th style="width: 8%;">HSN/SAC</th>
-                <th style="width: 10%;">price/Unit</th>
-                <th style="width: 5%;">Qty</th>
-                <th style="width: 8%;">Taxable</th>
-                <th style="width: 10%;">CGST</th>
-                <th style="width: 10%;">SGST</th>
-                <th style="width: 14%;">Amount</th>
+                <th style="width: 13%;">price/Unit</th>
+                <th style="width: 12%;">Qty</th>
+                <th style="width: 20%;">Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -601,6 +598,11 @@ finalPaid = totalAmount - extradisc;
                     unitName = prod.get(8).toString();
                 }
                 
+                String convertionUnit = "";
+                if(prod.size() > 9 && prod.get(9) != null){
+                    convertionUnit = prod.get(9).toString();
+                }
+                
                 double taxableAmount = itemTotal / (1 + (gstPer / 100.0));
                 double gstAmount = itemTotal - taxableAmount;
                 double cgst = gstAmount / 2;
@@ -613,11 +615,8 @@ finalPaid = totalAmount - extradisc;
                 </td>
                 <td class="text-center" style="width: 8%;"><%= hsnCode %></td>
                 <td class="text-right" style="width: 10%;"><%= df.format(itemPrice) %></td>
-                <td class="text-center" style="width: 5%;"><%= qty %><% if(unitName != null && !unitName.trim().isEmpty()) { %> <%= unitName %><% } %></td>
-                <td class="text-right" style="width: 8%;"><%= df.format(taxableAmount) %></td>
-                <td class="text-right" style="width: 10%;"><%= df.format(cgst) %></td>
-                <td class="text-right" style="width: 10%;"><%= df.format(sgst) %></td>
-                <td class="text-right" style="width: 14%;"><%= df.format(itemTotal) %></td>
+                <td class="text-center" style="width: 12%;"><%= qty %><% if(convertionUnit != null && !convertionUnit.trim().isEmpty()) { %> <%= convertionUnit %><% } else if(unitName != null && !unitName.trim().isEmpty()) { %> <%= unitName %><% } %></td>
+                <td class="text-right" style="width: 20%;"><%= df.format(itemTotal) %></td>
             </tr>
             <% } %>
             
@@ -630,25 +629,19 @@ finalPaid = totalAmount - extradisc;
             %>
             <tr class="empty-filler-row">
                 <td class="text-center" style="width: 5%; height: 25px;">&nbsp;</td>
-                <td style="width: 30%;">&nbsp;</td>
+                <td style="width: 32%;">&nbsp;</td>
                 <td class="text-center" style="width: 8%;">&nbsp;</td>
-                <td class="text-right" style="width: 10%;">&nbsp;</td>
-                <td class="text-center" style="width: 5%;">&nbsp;</td>
-                <td class="text-right" style="width: 10%;">&nbsp;</td>
-                <td class="text-right" style="width: 10%;">&nbsp;</td>
-                <td class="text-right" style="width: 10%;">&nbsp;</td>
-                <td class="text-right" style="width: 11%;">&nbsp;</td>
+                <td class="text-right" style="width: 13%;">&nbsp;</td>
+                <td class="text-center" style="width: 12%;">&nbsp;</td>
+                <td class="text-right" style="width: 20%;">&nbsp;</td>
             </tr>
             <% } %>
         </tbody>
         <tfoot>
             <tr class="total-row">
-                <td colspan="4" class="text-right" style="width: 55%;">Total</td>
-                <td class="text-center" style="width: 8%;"><%= totalQty %></td>
-                <td class="text-right" style="width: 12%;"> <%= df.format(totalTaxableAmount) %></td>
-                <td class="text-right" style="width: 8%;"> <%= df.format(totalCGST) %></td>
-                <td class="text-right" style="width: 8%;"> <%= df.format(totalSGST) %></td>
-                <td class="text-right" style="width: 9%;"> <%= df.format(totalAmount) %></td>
+                <td colspan="4" class="text-right">Total</td>
+                <td class="text-center"><%= totalQty %></td>
+                <td class="text-right"> <%= df.format(totalAmount) %></td>
             </tr>
         </tfoot>
     </table>
@@ -656,27 +649,30 @@ finalPaid = totalAmount - extradisc;
     <!-- Tax & Amounts -->
     <div class="tax-amounts-row">
         <div class="tax-box">
-            <div class="tax-row border-bottom">
-                <div>Tax details</div>
-                <div>
-                    <% 
-                    for(Integer rate : gstWiseTaxable.keySet()) {
-                        out.print(rate + ".0%");
-                    }
-                    %>
-                </div>
-            </div>
-            <div class="tax-row">
+            <div class="tax-row border-bottom" style="font-weight:bold;">
+                <div>GST Rate</div>
+                <div>Taxable</div>
                 <div>CGST</div>
-                <div>₹ <%= df.format(totalCGST) %></div>
-            </div>
-            <div class="tax-row">
                 <div>SGST</div>
-                <div>₹ <%= df.format(totalSGST) %></div>
             </div>
+            <%
+            for(Integer rate : gstWiseTaxable.keySet()) {
+                double txbl = gstWiseTaxable.get(rate);
+                double cg = gstWiseCGST.get(rate);
+                double sg = gstWiseSGST.get(rate);
+            %>
             <div class="tax-row">
-                <div>IGST</div>
-                <div>₹ <%= df.format(totalIGST) %></div>
+                <div><%= rate %>%</div>
+                <div>₹ <%= df.format(txbl) %></div>
+                <div>₹ <%= df.format(cg) %></div>
+                <div>₹ <%= df.format(sg) %></div>
+            </div>
+            <% } %>
+            <div class="tax-row" style="font-weight:bold; border-top:1px solid #ccc;">
+                <div>Total GST</div>
+                <div>₹ <%= df.format(totalTaxableAmount) %></div>
+                <div>₹ <%= df.format(totalCGST) %></div>
+                <div>₹ <%= df.format(totalSGST) %></div>
             </div>
         </div>
         <div class="amounts-box">

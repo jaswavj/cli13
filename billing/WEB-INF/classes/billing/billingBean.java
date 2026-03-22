@@ -1005,6 +1005,7 @@ public Vector getBillDetailsUsingNo(String bill) throws Exception {
             row.addElement(rs.getString(7)); // category_name
             row.addElement(rs.getString(8)); // hsn
             row.addElement(rs.getString(9)); // unit_name
+            row.addElement(rs.getString(10)); // convertion_unit
            
             vec.add(row);
         }
@@ -2463,7 +2464,7 @@ public double getPaidTotal(String bill)throws Exception
 		      pt.setString(1,bill);
 		      rs = pt.executeQuery();
 		      if(rs.next())
-		      	disc  = rs.getInt(1);
+		      	disc  = rs.getDouble(1);
 
 		      return disc;
 			}
@@ -2502,7 +2503,7 @@ public double getbalanceTotal(String bill)throws Exception
 		      pt.setString(1,bill);
 		      rs = pt.executeQuery();
 		      if(rs.next())
-		      	disc  = rs.getInt(1);
+		      	disc  = rs.getDouble(1);
 
 		      return disc;
 			}
