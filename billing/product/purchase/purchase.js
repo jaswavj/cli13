@@ -183,6 +183,10 @@ function getProductDetails(str, str1) {
             if (resArr.length > 1) {		        
                 $('#_productName_' + str).val(resArr[0]);       
                 $('#_cost_' + str).val(resArr[4]);
+                $('#_mrp_' + str).val(resArr[5]);
+                if (resArr.length > 13 && resArr[13].trim() !== '') {
+                    $('#_tax_' + str).val(resArr[13].trim());
+                }
                 var unitName = (resArr.length > 10) ? resArr[10] : '';
                 $('#_productName_' + str).data('unitName', unitName);
                 // Show unit next to Qty/Pk and Total fields
@@ -198,6 +202,14 @@ function getProductDetails(str, str1) {
                 var convertionCalc = (resArr.length > 12) ? parseFloat(resArr[12]) || 1 : 1;
                 $('#_productName_' + str).data('convertionUnit', convertionUnit);
                 $('#_productName_' + str).data('convertionCalc', convertionCalc);
+
+                // Multiply stored cost/mrp back to user-facing value using conversion factor
+                if (convertionCalc > 1) {
+                    var storedCost = parseFloat(resArr[4]) || 0;
+                    var storedMrp = parseFloat(resArr[5]) || 0;
+                    $('#_cost_' + str).val((storedCost * convertionCalc).toFixed(3));
+                    $('#_mrp_' + str).val((storedMrp * convertionCalc).toFixed(3));
+                }
             }
         }
     });

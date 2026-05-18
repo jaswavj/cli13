@@ -76,7 +76,7 @@ for(Vector prod : quotDetails){
     <meta charset="UTF-8">
     <title>Quotation - <%= quotNo %></title>
     <style>
-        @page { size: A4; margin: 5mm; }
+        @page { size: A5; margin: 5mm; }
         body {
             font-family: Arial, sans-serif;
             font-size: 11px;
@@ -86,38 +86,39 @@ for(Vector prod : quotDetails){
         }
         .container {
             width: calc(100% - 20px);
-            border: 2px solid #2c3e50;
+            border: 2px solid #000;
             margin: 0 auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             background: white;
         }
         .header-title {
             text-align: center;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 12px;
             margin-bottom: 5px;
-            color: #2c3e50;
-            background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
-            color: white;
-            padding: 8px;
+            color: #000;
+            background: white;
+            border-bottom: 1px solid #000;
+            padding: 5px;
         }
         .quotation-badge {
-            background: #f3f4f6;
-            border: 2px dashed #5b21b6;
-            padding: 4px 12px;
+            background: white;
+            border: 2px dashed #000;
+            padding: 3px 8px;
             text-align: center;
-            font-size: 14px;
+            font-size: 10px;
             font-weight: bold;
-            color: #5b21b6;
-            margin: 5px 0;
+            color: #000;
+            margin: 3px 0;
         }
         /* Header Section */
         .company-header {
             display: flex;
-            border-bottom: 2px solid #2c3e50;
-            background: #f8f9fa;
+            flex-direction: column;
+            border-bottom: 2px solid #000;
+            background: white;
             padding: 8px;
             align-items: center;
+            text-align: center;
         }
         .logo-area {
             width: 150px;
@@ -128,7 +129,6 @@ for(Vector prod : quotDetails){
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-right: 20px;
         }
         .logo-area img {
@@ -139,25 +139,26 @@ for(Vector prod : quotDetails){
         .company-details {
             flex: 1;
             color: #000;
-            font-size: 12px;
+            font-size: 11px;
             line-height: 1.6;
+            text-align: center;
         }
         .company-name {
-            font-size: 22px;
+            font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             letter-spacing: 1px;
             color: #000;
         }
         .company-details div {
-            margin: 3px 0;
+            margin: 2px 0;
         }
         .info-section {
             display: flex;
             justify-content: space-between;
             padding: 8px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #000;
         }
         .info-box {
             flex: 1;
@@ -165,22 +166,22 @@ for(Vector prod : quotDetails){
         }
         .info-label {
             font-weight: bold;
-            color: #4b5563;
+            color: #000;
         }
         table {
             width: 100%;
             border-collapse: collapse;
         }
         th {
-            background: #f3f4f6;
+            background: white;
             padding: 6px 4px;
             text-align: left;
             font-weight: bold;
-            border: 1px solid #d1d5db;
+            border: 1px solid #000;
         }
         td {
             padding: 5px 4px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #000;
         }
         .text-right {
             text-align: right;
@@ -190,7 +191,7 @@ for(Vector prod : quotDetails){
         }
         .total-section {
             padding: 8px;
-            background: #f9fafb;
+            background: white;
         }
         .total-row {
             display: flex;
@@ -209,23 +210,23 @@ for(Vector prod : quotDetails){
         }
         .grand-total {
             font-size: 14px;
-            color: #5b21b6;
-            background: #f3f4f6;
+            color: #000;
+            background: white;
             padding: 8px;
-            border-radius: 4px;
+            border-top: 1px solid #000;
         }
         .footer {
             padding: 10px;
             text-align: center;
             font-size: 10px;
-            color: #6b7280;
-            border-top: 2px solid #e5e7eb;
+            color: #000;
+            border-top: 2px solid #000;
             margin-top: 10px;
         }
         .terms {
             padding: 8px;
             font-size: 10px;
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid #000;
         }
         .bank-details {
             display: flex;
@@ -266,20 +267,18 @@ for(Vector prod : quotDetails){
                 box-shadow: none;
             }
             @page {
+                size: A5;
                 margin: 5mm;
             }
         }
     </style>
 </head>
 <body>
-    <div class="header-title">QUOTATION</div>
     
     <div class="container">
         <!-- Header -->
         <div class="company-header">
-            <div class="logo-area">
-                <img src="logo.png" alt="Company Logo" onerror="this.style.display='none'">
-            </div>
+            
             <div class="company-details">
                 <% if (!companyName.isEmpty()) { %>
                     <div class="company-name"><%= companyName %></div>
@@ -300,14 +299,12 @@ for(Vector prod : quotDetails){
                 <% if (!companyGSTIN.isEmpty()) { %>
                     <div>GSTIN: <%= companyGSTIN %></div>
                 <% } %>
-                <% if (!companyPhone.isEmpty()) { %>
-                    <div>Phone: <%= companyPhone %></div>
-                <% } %>
+                
             </div>
         </div>
         
         <div class="quotation-badge">
-            QUOTATION NO: <%= quotNo %>
+            QUOTATION <br> NO: <%= quotNo %>
         </div>
         
         <div class="info-section">
@@ -385,18 +382,6 @@ for(Vector prod : quotDetails){
                 <div class="total-value"><strong>₹ <%= df.format(payable) %></strong></div>
             </div>
         </div>
-        
-        <% if (bankDetails != null && !bankDetails.trim().isEmpty()) { %>
-        <div class="bank-details">
-            <div class="bank-details-text">
-                <strong>Bank Details for Payment:</strong>
-                <%= bankDetails.replace("\n", "<br>") %>
-            </div>
-            <div class="qr-code">
-                <img src="qrcode.jpeg" alt="Payment QR Code" onerror="this.style.display='none'">
-            </div>
-        </div>
-        <% } %>
         
         <div class="terms">
             <strong>Terms & Conditions:</strong><br>

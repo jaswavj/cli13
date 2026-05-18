@@ -60,12 +60,12 @@
                                         <button class="btn btn-outline-success btn-sm" onclick="showOrderList()" title="Order List">
                                             <i class="fa-solid fa-utensils"></i>
                                         </button>
-                                    </div>
+                                    </div-->
                                     <div class="col-2">
                                         <button class="btn btn-outline-violet btn-sm w-100" data-bs-toggle="modal" data-bs-target="#quotationListModal">
                                             <i class="fa-solid fa-file-invoice"></i> QUOTATION
                                         </button>
-                                    </div-->
+                                    </div>
                                     <div class="col-2">
                                         <div class="form-check form-switch" style="padding-top: 8px; background: none;">
                                             <input class="form-check-input" type="checkbox" id="isTaxBill" checked style="cursor: pointer;">

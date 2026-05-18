@@ -43,6 +43,20 @@ if (hsn != null && hsn.trim().isEmpty()) {
     hsn = null;
 }
 
+// Convert mrp, cost, commission when unit has a conversion setup
+java.math.BigDecimal mrpBD = new java.math.BigDecimal(mrp);
+java.math.BigDecimal costBD = new java.math.BigDecimal(cost);
+java.math.BigDecimal commBD = new java.math.BigDecimal(commission);
+Vector selectedUnit = prod.getUnitById(unitId);
+if (selectedUnit != null && selectedUnit.size() > 3 && selectedUnit.elementAt(3) != null) {
+    java.math.BigDecimal convertionCalculation = (java.math.BigDecimal) selectedUnit.elementAt(3);
+    if (convertionCalculation.compareTo(java.math.BigDecimal.ZERO) > 0) {
+        mrp = mrpBD.divide(convertionCalculation, 6, java.math.RoundingMode.HALF_UP).doubleValue();
+        cost = costBD.divide(convertionCalculation, 6, java.math.RoundingMode.HALF_UP).doubleValue();
+        commission = commBD.divide(convertionCalculation, 6, java.math.RoundingMode.HALF_UP).doubleValue();
+    }
+}
+
 try {
     // Get the original product name to check if it changed
     String originalName = prod.getProductNameById(productId);

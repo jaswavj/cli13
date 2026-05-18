@@ -461,6 +461,12 @@ finalPaid = totalAmount - extradisc;
             .print-controls {
                 display: none !important;
             }
+            .page-break {
+                page-break-after: always;
+            }
+        }
+        .page-break {
+            page-break-after: always;
         }
     </style>
     <script>
@@ -491,6 +497,18 @@ finalPaid = totalAmount - extradisc;
     <button class="btn btn-cancel" onclick="cancelPrint()">❌ Cancel</button>
 </div>
 
+<%
+int ITEMS_PER_PAGE = 25;
+int totalItems = billDetails.size();
+int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_PAGE);
+if (totalPages == 0) totalPages = 1;
+
+for (int pageNum = 0; pageNum < totalPages; pageNum++) {
+    int startIdx = pageNum * ITEMS_PER_PAGE;
+    int endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalItems);
+    boolean isLastPage = (pageNum == totalPages - 1);
+%>
+
 <div class="header-title">Tax Invoice</div>
 
 <div class="container">
@@ -507,7 +525,6 @@ finalPaid = totalAmount - extradisc;
             <% } %>
             <% if (!companyAddress.isEmpty()) { %>
                 <% 
-                // Split address by newlines and display each line
                 String[] addressLines = companyAddress.split("\\r?\\n");
                 for (String line : addressLines) {
                     if (line != null && !line.trim().isEmpty()) {
@@ -556,6 +573,9 @@ finalPaid = totalAmount - extradisc;
                 <% if (lrName != null && !lrName.trim().isEmpty()) { %>
                 <div>LR Name: <%= lrName %></div>
                 <% } %>
+                <% if (totalPages > 1) { %>
+                <div>Page: <%= (pageNum + 1) %> / <%= totalPages %></div>
+                <% } %>
             </div>
         </div>
     </div>
@@ -574,19 +594,15 @@ finalPaid = totalAmount - extradisc;
         </thead>
         <tbody>
             <%
-            int count = 1;
-            for(Vector<Object> prod : billDetails){
+            for (int i = startIdx; i < endIdx; i++) {
+                Vector<Object> prod = billDetails.get(i);
                 double itemTotal = Double.parseDouble(prod.get(4).toString());
                 double itemPrice = Double.parseDouble(prod.get(2).toString());
                 int gstPer = Integer.parseInt(prod.get(5).toString());
                 double qty = Double.parseDouble(prod.get(1).toString());
                 
-                String category = "";
-                if(prod.size() > 6 && prod.get(6) != null){
-                    category = prod.get(6).toString();
-                }
                 String productName = prod.get(0).toString();
-                String displayName = (category.isEmpty()) ? productName : category + " - " + productName;
+                String displayName = productName;
                 
                 String hsnCode = "";
                 if(prod.size() > 7 && prod.get(7) != null){
@@ -602,14 +618,9 @@ finalPaid = totalAmount - extradisc;
                 if(prod.size() > 9 && prod.get(9) != null){
                     convertionUnit = prod.get(9).toString();
                 }
-                
-                double taxableAmount = itemTotal / (1 + (gstPer / 100.0));
-                double gstAmount = itemTotal - taxableAmount;
-                double cgst = gstAmount / 2;
-                double sgst = gstAmount / 2;
             %>
             <tr class="item-row">
-                <td class="text-center" style="width: 5%;"><%= count++ %></td>
+                <td class="text-center" style="width: 5%;"><%= (i + 1) %></td>
                 <td style="width: 30%;">
                     <div class="font-bold"><%= displayName %></div>
                 </td>
@@ -620,12 +631,13 @@ finalPaid = totalAmount - extradisc;
             </tr>
             <% } %>
             
-            <!-- Add empty filler rows to maintain fixed height -->
+            <!-- Filler rows on last page only -->
             <% 
-            int minRows = 6; // Minimum rows to display
-            int actualRows = billDetails.size();
-            int emptyRowsNeeded = Math.max(0, minRows - actualRows);
-            for(int i = 0; i < emptyRowsNeeded; i++) { 
+            if (isLastPage) {
+                int minRows = 6;
+                int pageRows = endIdx - startIdx;
+                int emptyRowsNeeded = Math.max(0, minRows - pageRows);
+                for(int i = 0; i < emptyRowsNeeded; i++) { 
             %>
             <tr class="empty-filler-row">
                 <td class="text-center" style="width: 5%; height: 25px;">&nbsp;</td>
@@ -635,7 +647,7 @@ finalPaid = totalAmount - extradisc;
                 <td class="text-center" style="width: 12%;">&nbsp;</td>
                 <td class="text-right" style="width: 20%;">&nbsp;</td>
             </tr>
-            <% } %>
+            <% } } %>
         </tbody>
         <tfoot>
             <tr class="total-row">
@@ -715,11 +727,16 @@ finalPaid = totalAmount - extradisc;
                 Amount In Words : <%= numPaid %> 
             </div>
         </div>
-        
     </div>
-    
 
 </div>
 
+<% if (!isLastPage) { %>
+<div class="page-break"></div>
+<% } %>
+
+<% } // end page loop %>
+
 </body>
 </html>
+

@@ -136,7 +136,7 @@ String type = request.getParameter("type"); // success / warning / danger / info
                                                     String convertionCalculation = (unit.size() > 3 && unit.elementAt(3) != null) ? unit.elementAt(3).toString() : "";
                                                     String selected = (unitName.equalsIgnoreCase("Nos") || unitName.equalsIgnoreCase("NOS") || unitName.equalsIgnoreCase("PCS")) ? "selected" : "";
                                     %>
-                                        <option value="<%=unitId%>" data-convertion-unit="<%=convertionUnit%>" data-convertion-calculation="<%=convertionCalculation%>" <%=selected%>><%=unitName%></option>
+                                        <option value="<%=unitId%>" data-convertion-unit="<%=convertionUnit%>" data-convertion-calculation="<%=convertionCalculation%>" <%=selected%>><%=unitName%><% if(!convertionUnit.isEmpty() && !convertionCalculation.isEmpty()){ %> (<%=convertionCalculation%> <%=convertionUnit%>)<% } %></option>
                                     <%      }
                                             }
                                         }
@@ -613,6 +613,22 @@ String type = request.getParameter("type"); // success / warning / danger / info
             if (opt.value == product.unitId) { opt.selected = true; break; }
         }
         handleUnitChange(unitSelect);
+
+        // Multiply stored price back to user-facing value using conversion factor
+        const selectedOpt = unitSelect.options[unitSelect.selectedIndex];
+        if (selectedOpt) {
+            const conv = parseFloat(selectedOpt.getAttribute('data-convertion-calculation') || '0');
+            if (!isNaN(conv) && conv > 0) {
+                const storedCost = parseFloat(product.cost || '0');
+                const storedMrp = parseFloat(product.mrp || '0');
+                const storedComm = parseFloat(product.commission || '0');
+                form.querySelector('[name="cost"]').value = (storedCost * conv).toFixed(3);
+                form.querySelector('[name="mrp"]').value = (storedMrp * conv).toFixed(3);
+                form.querySelector('[name="commission"]').value = (storedComm * conv).toFixed(3);
+                // Refresh notes now that inputs show the correct multiplied-back values
+                updateConvertedPriceNotes();
+            }
+        }
 
         // Set GST dropdown
         const gstSelect = form.querySelector('[name="gst"]');

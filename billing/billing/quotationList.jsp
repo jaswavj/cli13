@@ -58,7 +58,7 @@ Vector quotList = bill.getQuotationList();
                                     <td><%= time %></td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-success" 
+                                            <button type="button" class="btn btn-success" style="display:none;"
                                                     onclick="billThisQuotation(<%= quotId %>)"
                                                     title="Convert to Bill">
                                                 <i class="fas fa-check"></i> Bill
