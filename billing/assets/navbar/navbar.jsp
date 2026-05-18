@@ -191,19 +191,11 @@ for (int i = 0; i < vecPer.size(); i++) {
             <i class="fas fa-chevron-down ms-auto"></i>
           </a>
           <div class="collapse sidebar-submenu" id="gstReportMenu">
-            <a href="<%=request.getContextPath()%>/reports/GST/gstr1/page.jsp" class="sidebar-subitem">
-              <i class="fas fa-file-invoice me-2"></i>GSTR-1 Return
-            </a>
-            <a href="<%=request.getContextPath()%>/reports/GST/GSTR3B/page.jsp" class="sidebar-subitem">
-              <i class="fas fa-file-invoice-dollar me-2"></i>GSTR-3B Monthly Return
-            </a>
-            <a href="<%=request.getContextPath()%>/reports/GST/validation/page.jsp" class="sidebar-subitem">
-              <i class="fas fa-check-double me-2"></i>GSTR-1 vs GSTR-3B Validation
-            </a>
-            <a href="<%=request.getContextPath()%>/reports/GST/salesGST/page.jsp" class="sidebar-subitem">Sales(GSTR-1)</a>
-            <a href="<%=request.getContextPath()%>/reports/GST/GSTSummary/page.jsp" class="sidebar-subitem">Sales Summary</a>
+            <a href="<%=request.getContextPath()%>/reports/dayBook/page.jsp" class="sidebar-subitem"><i class="fas fa-file-invoice-dollar me-2"></i>Custom GST</a>
+            <a href="<%=request.getContextPath()%>/reports/GST/gstCombined/page.jsp" class="sidebar-subitem"><i class="fas fa-file-invoice-dollar me-2"></i>GST Details</a>
+            <a href="<%=request.getContextPath()%>/reports/GST/salesGST/page.jsp" class="sidebar-subitem">Sales GST</a>
             <a href="<%=request.getContextPath()%>/reports/GST/purchaseGST/page.jsp" class="sidebar-subitem">Purchase GST</a>
-            <a href="<%=request.getContextPath()%>/reports/GST/purchaseGSTSummary/page.jsp" class="sidebar-subitem">Purchase GST Summary</a>
+            <a href="<%=request.getContextPath()%>/reports/GST/GSTSummary/page.jsp" class="sidebar-subitem">GST Summary</a>
           </div>
         </div>
         
@@ -212,10 +204,9 @@ for (int i = 0; i < vecPer.size(); i++) {
           <i class="fas fa-chart-line me-2"></i>Profit & Loss Report
         </a>
         
-        <!-- Profit Analysis Report -->
-        <a href="<%=request.getContextPath()%>/reports/profitAnalysis/page.jsp" class="sidebar-subitem">
-          <i class="fas fa-chart-pie me-2"></i>Profit Analysis Report
-        </a>
+        <!-- Day Book -->
+        
+        
         
         <!-- Commission Report -->
         <a href="<%=request.getContextPath()%>/reports/commissionReport/page.jsp" class="sidebar-subitem">

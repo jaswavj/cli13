@@ -4475,6 +4475,286 @@ public Vector getPurchaseReport(String from, String to, int supId) throws Except
     return vec;
 }
 
+// Day Book: combined Sales, Purchase, Payment-In, Payment-Out in one list
+// Columns: 0=date(dd/MM/yyyy), 1=ref_no, 2=party_name, 3=category_name,
+//          4=type, 5=total, 6=payment_type, 7=paid, 8=received, 9=balance,
+//          10=description, 11=sort_date(yyyy-MM-dd for sorting)
+public Vector getDayBookReport(String from, String to) throws Exception {
+    Connection con = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    Vector vec = new Vector();
+    try {
+        con = util.DBConnectionManager.getConnectionFromPool();
+
+        // 1. Sales
+        String sqlSales =
+            "SELECT DATE_FORMAT(b.date, '%d/%m/%Y') AS txn_date, b.bill_display AS ref_no, " +
+            "COALESCE(NULLIF(b.cusName,''), 'Cash Sale') AS party_name, '' AS cat, " +
+            "CASE WHEN b.cusName IS NULL OR b.cusName = '' THEN 'Cash Sale' ELSE 'Sale' END AS txn_type, " +
+            "b.payable AS total, COALESCE(MAX(pt.type), 'Cash') AS pay_type, " +
+            "0 AS paid, b.paid AS received, b.balance AS balance, '' AS descr, b.date AS sort_date " +
+            "FROM prod_bill b " +
+            "LEFT JOIN prod_bill_payment bp ON bp.bill_id = b.id " +
+            "LEFT JOIN prod_bill_payment_type pt ON pt.id = bp.paymentType " +
+            "WHERE b.date BETWEEN ? AND ? AND b.is_cancelled = 0 " +
+            "GROUP BY b.id, b.date, b.bill_display, b.cusName, b.payable, b.paid, b.balance " +
+            "ORDER BY b.date, b.id";
+        ps = con.prepareStatement(sqlSales);
+        ps.setString(1, from);
+        ps.setString(2, to);
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            Vector row = new Vector();
+            row.addElement(rs.getString("txn_date"));
+            row.addElement(rs.getString("ref_no") != null ? rs.getString("ref_no") : "");
+            row.addElement(rs.getString("party_name") != null ? rs.getString("party_name") : "Cash Sale");
+            row.addElement("");
+            row.addElement(rs.getString("txn_type"));
+            row.addElement(String.format("%.2f", rs.getDouble("total")));
+            row.addElement(rs.getString("pay_type") != null ? rs.getString("pay_type") : "Cash");
+            row.addElement("0.00");
+            row.addElement(String.format("%.2f", rs.getDouble("received")));
+            row.addElement(String.format("%.2f", rs.getDouble("balance")));
+            row.addElement("");
+            row.addElement(rs.getString("sort_date") != null ? rs.getString("sort_date") : "");
+            vec.add(row);
+        }
+        rs.close(); ps.close();
+
+        // 2. Purchases
+        String sqlPurchase =
+            "SELECT DATE_FORMAT(pp.ent_date, '%d/%m/%Y') AS txn_date, COALESCE(pp.invno,'') AS ref_no, " +
+            "COALESCE(s.name,'') AS party_name, '' AS cat, 'Purchase' AS txn_type, " +
+            "pp.total AS total, " +
+            "CASE WHEN pp.pay_type=1 THEN 'Cash' WHEN pp.pay_type=2 THEN 'UPI' " +
+            "     WHEN pp.pay_type=3 THEN 'Card' WHEN pp.pay_type=4 THEN 'Bank' ELSE 'Cash' END AS pay_type, " +
+            "pp.paid AS paid, 0 AS received, pp.balance AS balance, '' AS descr, pp.ent_date AS sort_date " +
+            "FROM prod_purchase pp " +
+            "LEFT JOIN prod_supplier s ON s.id = pp.deal_id " +
+            "WHERE pp.ent_date BETWEEN ? AND ? AND pp.is_cancelled = 0 AND pp.is_po = 0 " +
+            "ORDER BY pp.ent_date, pp.id";
+        ps = con.prepareStatement(sqlPurchase);
+        ps.setString(1, from);
+        ps.setString(2, to);
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            Vector row = new Vector();
+            row.addElement(rs.getString("txn_date"));
+            row.addElement(rs.getString("ref_no"));
+            row.addElement(rs.getString("party_name"));
+            row.addElement("");
+            row.addElement("Purchase");
+            row.addElement(String.format("%.2f", rs.getDouble("total")));
+            row.addElement(rs.getString("pay_type"));
+            row.addElement(String.format("%.2f", rs.getDouble("paid")));
+            row.addElement("0.00");
+            row.addElement(String.format("%.2f", rs.getDouble("balance")));
+            row.addElement("");
+            row.addElement(rs.getString("sort_date") != null ? rs.getString("sort_date") : "");
+            vec.add(row);
+        }
+        rs.close(); ps.close();
+
+        // 3. Payment-In (due collections)
+        String sqlPayIn =
+            "SELECT DATE_FORMAT(dc.collectDate, '%d/%m/%Y') AS txn_date, b.bill_display AS ref_no, " +
+            "COALESCE(b.cusName,'') AS party_name, '' AS cat, 'Payment-In' AS txn_type, " +
+            "dc.paid AS total, CASE WHEN dc.mode=1 THEN 'Cash' ELSE 'Bank' END AS pay_type, " +
+            "0 AS paid, dc.paid AS received, dc.finalBalance AS balance, '' AS descr, dc.collectDate AS sort_date " +
+            "FROM prod_bill_due_collection dc " +
+            "JOIN prod_bill b ON b.id = dc.bill_id " +
+            "WHERE dc.collectDate BETWEEN ? AND ? " +
+            "ORDER BY dc.collectDate, dc.id";
+        ps = con.prepareStatement(sqlPayIn);
+        ps.setString(1, from);
+        ps.setString(2, to);
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            Vector row = new Vector();
+            row.addElement(rs.getString("txn_date"));
+            row.addElement(rs.getString("ref_no") != null ? rs.getString("ref_no") : "");
+            row.addElement(rs.getString("party_name"));
+            row.addElement("");
+            row.addElement("Payment-In");
+            row.addElement(String.format("%.2f", rs.getDouble("total")));
+            row.addElement(rs.getString("pay_type"));
+            row.addElement("0.00");
+            row.addElement(String.format("%.2f", rs.getDouble("received")));
+            row.addElement(String.format("%.2f", rs.getDouble("balance")));
+            row.addElement("");
+            row.addElement(rs.getString("sort_date") != null ? rs.getString("sort_date") : "");
+            vec.add(row);
+        }
+        rs.close(); ps.close();
+
+        // 4. Payment-Out (supplier payments)
+        String sqlPayOut =
+            "SELECT DATE_FORMAT(DATE(spd.date), '%d/%m/%Y') AS txn_date, COALESCE(pp.invno,'') AS ref_no, " +
+            "COALESCE(s.name,'') AS party_name, '' AS cat, 'Payment-Out' AS txn_type, " +
+            "spd.paid AS total, " +
+            "CASE WHEN spd.pay_type=1 THEN 'Cash' WHEN spd.pay_type=2 THEN 'UPI' " +
+            "     WHEN spd.pay_type=3 THEN 'Card' WHEN spd.pay_type=4 THEN 'Bank' ELSE 'Cash' END AS pay_type, " +
+            "spd.paid AS paid, 0 AS received, 0 AS balance, COALESCE(spd.notes,'') AS descr, DATE(spd.date) AS sort_date " +
+            "FROM prod_purchase_supplier_payment_details spd " +
+            "JOIN prod_purchase_supplier_payment spp ON spp.id = spd.supPayId " +
+            "JOIN prod_supplier s ON s.id = spp.deal_id " +
+            "JOIN prod_purchase pp ON pp.id = spp.prid " +
+            "WHERE DATE(spd.date) BETWEEN ? AND ? " +
+            "ORDER BY DATE(spd.date), spd.id";
+        ps = con.prepareStatement(sqlPayOut);
+        ps.setString(1, from);
+        ps.setString(2, to);
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            Vector row = new Vector();
+            row.addElement(rs.getString("txn_date"));
+            row.addElement(rs.getString("ref_no"));
+            row.addElement(rs.getString("party_name"));
+            row.addElement("");
+            row.addElement("Payment-Out");
+            row.addElement(String.format("%.2f", rs.getDouble("total")));
+            row.addElement(rs.getString("pay_type"));
+            row.addElement(String.format("%.2f", rs.getDouble("paid")));
+            row.addElement("0.00");
+            row.addElement("0.00");
+            String notes = rs.getString("descr");
+            row.addElement(notes != null ? notes : "");
+            row.addElement(rs.getString("sort_date") != null ? rs.getString("sort_date") : "");
+            vec.add(row);
+        }
+        rs.close(); ps.close();
+
+        // Sort combined result by sort_date (yyyy-MM-dd string comparison works correctly)
+        java.util.Collections.sort(vec, new java.util.Comparator() {
+            public int compare(Object a, Object b) {
+                String da = ((Vector)a).elementAt(11).toString();
+                String db = ((Vector)b).elementAt(11).toString();
+                return da.compareTo(db);
+            }
+        });
+
+    } finally {
+        if (rs != null) try { rs.close(); } catch (Exception e) {}
+        if (ps != null) try { ps.close(); } catch (Exception e) {}
+        if (con != null) try { con.close(); } catch (Exception e) {}
+    }
+    return vec;
+}
+
+public Vector getSalesGSTDetailReport(String from, String to) throws Exception {
+    Connection con = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    Vector vec = new Vector();
+    try {
+        con = util.DBConnectionManager.getConnectionFromPool();
+        String sql =
+            "SELECT b.date, b.bill_display, b.cusName, p.name AS item_name, " +
+            "COALESCE(p.code, '') AS item_code, COALESCE(p.hsn, '') AS hsn_sac, " +
+            "COALESCE(pc.name, '') AS category, " +
+            "pu.name AS unit_name, " +
+            "bd.qty, bd.price AS unit_price, " +
+            "bd.gst AS tax_percent, " +
+            "(bd.price * bd.qty) / (1 + bd.gst / 100.0) AS taxable_amount, " +
+            "(bd.price * bd.qty) - ((bd.price * bd.qty) / (1 + bd.gst / 100.0)) AS tax_amount, " +
+            "(bd.price * bd.qty) AS trans_amount " +
+            "FROM prod_bill b " +
+            "JOIN prod_bill_details bd ON b.id = bd.bill_id " +
+            "JOIN prod_product p ON bd.prod_id = p.id " +
+            "LEFT JOIN prod_category pc ON p.category_id = pc.id " +
+            "LEFT JOIN prod_units pu ON p.unit_id = pu.id " +
+            "WHERE b.date BETWEEN ? AND ? AND b.is_cancelled = 0 AND bd.is_cancelled = 0 " +
+            "ORDER BY b.date, b.bill_display";
+        ps = con.prepareStatement(sql);
+        ps.setString(1, from);
+        ps.setString(2, to);
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            Vector row = new Vector();
+            row.addElement(rs.getString("date"));           // 0 Date
+            row.addElement(rs.getString("bill_display"));   // 1 Invoice No
+            row.addElement(rs.getString("cusName"));        // 2 Party Name
+            row.addElement(rs.getString("item_name"));      // 3 Item Name
+            row.addElement(rs.getString("item_code"));      // 4 Item Code
+            row.addElement(rs.getString("hsn_sac"));        // 5 HSN/SAC
+            row.addElement(rs.getString("category"));       // 6 Category
+            row.addElement("");                             // 7 Challan/Order No (N/A for sales)
+            row.addElement(rs.getString("qty"));            // 8 Quantity
+            row.addElement(rs.getString("unit_name"));      // 9 Unit
+            row.addElement(String.format("%.2f", rs.getDouble("taxable_amount"))); // 10 Taxable
+            row.addElement(String.format("%.2f", rs.getDouble("unit_price")));     // 11 Unit Price
+            row.addElement(rs.getString("tax_percent"));    // 12 Tax Percent
+            row.addElement(String.format("%.2f", rs.getDouble("tax_amount")));     // 13 Tax
+            row.addElement(String.format("%.2f", rs.getDouble("trans_amount")));   // 14 Trans Amount
+            vec.add(row);
+        }
+    } finally {
+        if (rs != null) try { rs.close(); } catch (Exception e) {}
+        if (ps != null) try { ps.close(); } catch (Exception e) {}
+        if (con != null) try { con.close(); } catch (Exception e) {}
+    }
+    return vec;
+}
+
+public Vector getPurchaseGSTDetailReport(String from, String to) throws Exception {
+    Connection con = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    Vector vec = new Vector();
+    try {
+        con = util.DBConnectionManager.getConnectionFromPool();
+        String sql =
+            "SELECT pp.invdate AS date, pp.invno AS invoice_no, s.name AS party_name, " +
+            "prod.name AS item_name, " +
+            "COALESCE(prod.code, '') AS item_code, " +
+            "COALESCE(NULLIF(pd.hsn_code,''), CAST(prod.hsn AS CHAR), '') AS hsn_sac, " +
+            "COALESCE(pc.name, '') AS category, " +
+            "COALESCE(pp.lr_no, '') AS challan_no, " +
+            "pd.quantity, pu.name AS unit_name, " +
+            "pd.rate AS unit_price, pd.tax AS tax_percent, " +
+            "pd.totalamt AS taxable_amount, " +
+            "(pd.cgst_amt + pd.sgst_amt + pd.igst_amt) AS tax_amount, " +
+            "pd.netamt AS trans_amount " +
+            "FROM prod_purchase pp " +
+            "JOIN prod_purchase_details pd ON pp.id = pd.prid " +
+            "JOIN prod_product prod ON pd.prods_id = prod.id " +
+            "JOIN prod_supplier s ON pp.deal_id = s.id " +
+            "LEFT JOIN prod_category pc ON prod.category_id = pc.id " +
+            "LEFT JOIN prod_units pu ON prod.unit_id = pu.id " +
+            "WHERE pp.ent_date BETWEEN ? AND ? AND pp.is_cancelled = 0 AND pp.is_po = 0 " +
+            "ORDER BY pp.invdate, pp.invno";
+        ps = con.prepareStatement(sql);
+        ps.setString(1, from);
+        ps.setString(2, to);
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            Vector row = new Vector();
+            row.addElement(rs.getString("date"));           // 0 Date
+            row.addElement(rs.getString("invoice_no"));     // 1 Invoice No
+            row.addElement(rs.getString("party_name"));     // 2 Party Name
+            row.addElement(rs.getString("item_name"));      // 3 Item Name
+            row.addElement(rs.getString("item_code") != null ? rs.getString("item_code") : ""); // 4 Item Code
+            row.addElement(rs.getString("hsn_sac") != null ? rs.getString("hsn_sac") : ""); // 5 HSN/SAC
+            row.addElement(rs.getString("category") != null ? rs.getString("category") : ""); // 6 Category
+            row.addElement(rs.getString("challan_no") != null ? rs.getString("challan_no") : ""); // 7 Challan/Order No
+            row.addElement(rs.getString("quantity") != null ? rs.getString("quantity") : ""); // 8 Quantity
+            row.addElement(rs.getString("unit_name") != null ? rs.getString("unit_name") : ""); // 9 Unit
+            row.addElement(String.format("%.2f", rs.getDouble("taxable_amount"))); // 10 Taxable
+            row.addElement(String.format("%.2f", rs.getDouble("unit_price")));     // 11 Unit Price
+            row.addElement(rs.getString("tax_percent"));    // 12 Tax Percent
+            row.addElement(String.format("%.2f", rs.getDouble("tax_amount")));     // 13 Tax
+            row.addElement(String.format("%.2f", rs.getDouble("trans_amount")));   // 14 Trans Amount
+            vec.add(row);
+        }
+    } finally {
+        if (rs != null) try { rs.close(); } catch (Exception e) {}
+        if (ps != null) try { ps.close(); } catch (Exception e) {}
+        if (con != null) try { con.close(); } catch (Exception e) {}
+    }
+    return vec;
+}
+
 public Vector getPurchaseGSTReport(String from, String to) throws Exception {
     Connection con = null;
     PreparedStatement ps = null;
